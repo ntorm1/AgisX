@@ -17,7 +17,7 @@ namespace AgisX
 {
 
 class Application;
-
+class AssetComp;
 
 class ExchangeMapComp : public BaseComp
 {
@@ -33,10 +33,12 @@ private:
 	mutable std::shared_mutex _mutex;
 	std::optional<AgisException> _exception;
 	std::optional<Exchange const*> _selected_exchange;
-	Application& _app;
+	
 	ExchangeMap const* _exchanges;
 	std::unordered_map<std::string, size_t> const* _exchange_ids = nullptr;
 
+	Application& _app;
+	AssetComp* _asset_comp = nullptr;
 };
 
 

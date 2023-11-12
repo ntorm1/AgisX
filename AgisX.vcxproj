@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\app\AppStyle.cpp" />
+    <ClCompile Include="source\app\AssetComp.cpp" />
     <ClCompile Include="source\app\ExchangeComp.cpp" />
     <ClCompile Include="source\app\main.cpp" />
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp" />
@@ -157,8 +158,10 @@
     <ClInclude Include="external\include\ImGuiFileDialog.h" />
     <ClInclude Include="external\include\ImGuiFileDialogConfig.h" />
     <ClInclude Include="source\app\AppStyle.h" />
+    <ClInclude Include="source\app\AssetComp.h" />
     <ClInclude Include="source\app\BaseComp.h" />
     <ClInclude Include="source\app\ExchangeComp.h" />
+    <ClInclude Include="source\app\Helpers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -10,6 +10,7 @@
 #include <rapidjson/document.h>
 
 import SerializeModule;
+import AgisTimeUtils;
 
 import <filesystem>;
 
@@ -65,7 +66,7 @@ Application::get_exchanges()
 //============================================================================
 void Application::render_app_state()
 {
-    if (ImGui::CollapsingHeader("Manage State"))
+    if (ImGui::CollapsingHeader("State IO"))
     {
         if (ImGui::Button("Save"))
         {
@@ -95,7 +96,6 @@ void Application::render_app_state()
                 else
                 {
                     _exception = res.error();
-                    ImGui::OpenPopup("AppError");
                 }
                 });
 
@@ -103,13 +103,84 @@ void Application::render_app_state()
             deserializationThread.detach();
         }
     }
+
+    if (ImGui::CollapsingHeader("Manage State"))
+    {
+        if (ImGui::Button("Build"))
+        {
+            std::thread build_thread([this] {
+                auto res = build();
+                if (!res)
+                {
+                    _exception = res.error();
+                }
+                });
+            build_thread.detach();
+        }
+
+        // same line 
+        ImGui::SameLine();
+        if (ImGui::Button("Step"))
+        {
+            std::thread step_thread([this] {
+                auto res = step();
+                if (!res)
+                {
+                    _exception = res.error();
+                }
+                });
+            step_thread.detach();
+        }
+
+        ImGui::Text("Global Time: %s", _app_state.get_global_time().c_str());
+        ImGui::Text("Next Global Time: %s", _app_state.get_next_global_time().c_str());
+    }
 }
+
+
+//============================================================================
+std::expected<bool, AgisException>
+Application::step()
+{
+    if(_hydra->get_state() != HydraState::BUILT && _hydra->get_state() != HydraState::RUN)
+	{
+        return std::unexpected<AgisException>("Hydra is not built or running");
+	}
+
+    auto lock = _hydra->__aquire_write_lock();
+    auto res = _hydra->step();
+
+    if (!res) return res;
+    
+    long long global_epoch = _hydra->get_global_time();
+    long long next_epoch = _hydra->get_next_global_time();
+    _app_state.update_time(global_epoch, next_epoch);
+    return true;
+}
+
+
+//============================================================================
+std::expected<bool, AgisException>
+Application::build()
+{
+    if (_hydra->get_state() != HydraState::INIT)
+    {
+        return std::unexpected<AgisException>("Hydra has already been built");
+    }
+    auto res = _hydra->build();
+    if (!res) return res;
+    _app_state.update_time(0, _hydra->get_next_global_time());
+}
+
 
 
 //============================================================================
 void
 Application::render()
 {
+    if (_exception.has_value()) {
+        ImGui::OpenPopup("AppError");
+    }
     if (ImGui::BeginPopupModal("AppError")) {
         ImGui::Text(_exception->what());
 
@@ -119,7 +190,6 @@ Application::render()
             _exception = std::nullopt;
         }
         ImGui::EndPopup();
-        ImGui::End();
         return;
     }
     ImGui::Begin("Application");
@@ -137,6 +207,17 @@ Application::emit_new_hydra_ptr()
     {
 		comp->on_hydra_restore();
 	}
+}
+
+
+//============================================================================
+void
+ApplicationState::update_time(long long global_time, long long next_global_time)
+{
+    auto t = epoch_to_str(global_time, "%Y-%m-%d %H:%M:%S");
+    auto t_next = epoch_to_str(next_global_time, "%Y-%m-%d %H:%M:%S");
+    set_global_time(t.value());
+    set_next_global_time(t_next.value());
 }
 
 }
