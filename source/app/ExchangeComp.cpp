@@ -24,6 +24,19 @@ ExchangeMapComp::ExchangeMapComp(Application& app)
 }
 
 
+void ExchangeMapComp::on_reset()
+{
+    BaseComp::on_reset();
+}
+
+
+//============================================================================
+void ExchangeMapComp::on_step()
+{
+    BaseComp::on_step();
+}
+
+
 //============================================================================
 void ExchangeMapComp::on_hydra_restore()
 {

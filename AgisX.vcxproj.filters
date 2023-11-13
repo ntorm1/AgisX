@@ -62,5 +62,11 @@
     <ClInclude Include="source\app\Helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="external\include\IMGUIQuakeConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="external\include\QuakeStyleConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

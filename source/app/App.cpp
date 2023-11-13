@@ -45,6 +45,15 @@ Application::Application()
     // init exchange map comp
 	exchange_comp = new ExchangeMapComp(*this);
     _comps.push_back(exchange_comp);
+
+}
+
+
+//============================================================================
+void Application::render_console()
+{
+    bool pople = true;
+    console3.render("console 2 implementation", pople);
 }
 
 
@@ -84,6 +93,8 @@ void Application::render_app_state()
         {
             // Create a new thread to perform deserialization
             std::thread deserializationThread([this] {
+                log("Loading hydra from " + _env_dir);
+                auto now = std::chrono::system_clock::now();
                 auto res = deserialize_hydra(_env_dir + "/hydra.json");
                 if (res)
                 {
@@ -92,6 +103,9 @@ void Application::render_app_state()
                     // Emit a signal or perform any necessary UI updates in the main thread
                     // after deserialization is complete
                     emit_new_hydra_ptr();
+                    auto end = std::chrono::system_clock::now();
+                    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
+                    log("Hydra loaded successfully in " + std::to_string(elapsed.count()) + "ms");
                 }
                 else
                 {
@@ -108,29 +122,43 @@ void Application::render_app_state()
     {
         if (ImGui::Button("Build"))
         {
-            std::thread build_thread([this] {
+            std::thread t([this] {
                 auto res = build();
                 if (!res)
                 {
                     _exception = res.error();
                 }
                 });
-            build_thread.detach();
+            t.detach();
         }
 
         // same line 
         ImGui::SameLine();
         if (ImGui::Button("Step"))
         {
-            std::thread step_thread([this] {
+            std::thread t([this] {
                 auto res = step();
                 if (!res)
                 {
                     _exception = res.error();
                 }
+                else
+                {
+                    emit_step();
+                }
                 });
-            step_thread.detach();
+            t.detach();
         }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Reset"))
+        {
+            std::thread t([this] {
+                reset();
+                emit_reset();
+			});
+            t.detach();
+		}
 
         ImGui::Text("Global Time: %s", _app_state.get_global_time().c_str());
         ImGui::Text("Next Global Time: %s", _app_state.get_next_global_time().c_str());
@@ -170,6 +198,7 @@ Application::build()
     auto res = _hydra->build();
     if (!res) return res;
     _app_state.update_time(0, _hydra->get_next_global_time());
+    return true;
 }
 
 
@@ -193,11 +222,33 @@ Application::render()
         return;
     }
     ImGui::Begin("Application");
+
 	render_app_state();
+
     exchange_comp->render();
+
+    render_console();
+
     ImGui::End();
 }
 
+
+//============================================================================
+void Application::reset()
+{
+    _hydra->reset();
+	_app_state.update_time(0, _hydra->get_next_global_time());
+}
+
+
+//============================================================================
+void Application::log(std::string const& msg)
+{
+    auto current_time = std::chrono::system_clock::now();
+    auto epoch = std::chrono::duration_cast<std::chrono::nanoseconds>(current_time.time_since_epoch()).count();
+	auto t = epoch_to_str(epoch, "%Y-%m-%d %H:%M:%S");
+	console3 << "[" << t.value() << "] " << msg << std::endl;
+}
 
 //============================================================================
 void
@@ -207,6 +258,22 @@ Application::emit_new_hydra_ptr()
     {
 		comp->on_hydra_restore();
 	}
+}
+
+
+//============================================================================
+void
+Application::emit_step()
+{
+    exchange_comp->on_step();
+}
+
+
+//============================================================================
+void
+Application::emit_reset()
+{
+    exchange_comp->on_reset();
 }
 
 

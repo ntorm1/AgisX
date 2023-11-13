@@ -27,6 +27,8 @@ public:
 	void render_new_exchange_comp();
 	void render() override;
 
+	void on_reset() override;
+	void on_step() override;
 	void on_hydra_restore() override;
 
 private:
