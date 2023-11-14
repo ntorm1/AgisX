@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
-    <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include</IncludePath>
+    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\debug\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+    <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include;$(SolutionDir)AgisX\external</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
-    <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include</IncludePath>
+    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+    <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include;$(SolutionDir)AgisX\external</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -110,15 +110,16 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;FMT_ENFORCE_COMPILE_STRING ;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableSpecificWarnings>5050;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);d3d12.lib;dxgi.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);d3d12.lib;dxgi.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -127,7 +128,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);NOMINMAX;FMT_ENFORCE_COMPILE_STRING ;SPDLOG_COMPILED_LIB </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -137,16 +138,29 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);d3d12.lib;dxgi.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);d3d12.lib;dxgi.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="external\miniz\miniz.c" />
+    <ClCompile Include="external\nfd\nfd_common.c" />
+    <ClCompile Include="external\nfd\nfd_win.cpp" />
     <ClCompile Include="source\app\AppStyle.cpp" />
+    <ClCompile Include="source\app\AssetComp.cpp" />
+    <ClCompile Include="source\app\EditorComp.cpp" />
     <ClCompile Include="source\app\ExchangeComp.cpp" />
     <ClCompile Include="source\app\main.cpp" />
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="source\app\App.cpp" />
     <ClCompile Include="source\app\App.h" />
+    <ClCompile Include="source\editor\editor.cpp" />
+    <ClCompile Include="source\editor\ngdoc.cpp" />
+    <ClCompile Include="source\editor\ngdraw.cpp" />
+    <ClCompile Include="source\editor\nged.cpp" />
+    <ClCompile Include="source\editor\nged_imgui.cpp" />
+    <ClCompile Include="source\editor\nged_imgui_fonts.cpp" />
+    <ClCompile Include="source\editor\nodes.cpp" />
+    <ClCompile Include="source\editor\style.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgisCore.vcxproj">
@@ -156,9 +170,42 @@
   <ItemGroup>
     <ClInclude Include="external\include\ImGuiFileDialog.h" />
     <ClInclude Include="external\include\ImGuiFileDialogConfig.h" />
+    <ClInclude Include="external\include\miniz.h" />
+    <ClInclude Include="external\include\nfd.h" />
+    <ClInclude Include="external\include\nlohmann\json.hpp" />
+    <ClInclude Include="external\include\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="external\include\phmap\btree.h" />
+    <ClInclude Include="external\include\phmap\meminfo.h" />
+    <ClInclude Include="external\include\phmap\phmap.h" />
+    <ClInclude Include="external\include\phmap\phmap_base.h" />
+    <ClInclude Include="external\include\phmap\phmap_bits.h" />
+    <ClInclude Include="external\include\phmap\phmap_config.h" />
+    <ClInclude Include="external\include\phmap\phmap_dump.h" />
+    <ClInclude Include="external\include\phmap\phmap_fwd_decl.h" />
+    <ClInclude Include="external\include\phmap\phmap_utils.h" />
+    <ClInclude Include="external\include\uuid.h" />
+    <ClInclude Include="external\nged\gmath.h" />
+    <ClInclude Include="external\nged\ngdoc.h" />
+    <ClInclude Include="external\nged\style.h" />
+    <ClInclude Include="external\nged\utils.h" />
     <ClInclude Include="source\app\AppStyle.h" />
+    <ClInclude Include="source\app\AssetComp.h" />
     <ClInclude Include="source\app\BaseComp.h" />
+    <ClInclude Include="source\app\EditorComp.h" />
     <ClInclude Include="source\app\ExchangeComp.h" />
+    <ClInclude Include="source\app\Helpers.h" />
+    <ClInclude Include="source\editor\editor.h" />
+    <ClInclude Include="source\editor\gmath.h" />
+    <ClInclude Include="source\editor\ngdoc.h" />
+    <ClInclude Include="source\editor\nged.h" />
+    <ClInclude Include="source\editor\nged_imgui.h" />
+    <ClInclude Include="source\editor\nodes.h" />
+    <ClInclude Include="source\editor\res\fa_icondef.h" />
+    <ClInclude Include="source\editor\res\fa_solid.hpp" />
+    <ClInclude Include="source\editor\res\roboto_medium.hpp" />
+    <ClInclude Include="source\editor\res\sourcecodepro.hpp" />
+    <ClInclude Include="source\editor\style.h" />
+    <ClInclude Include="source\editor\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,6 +4,7 @@
 #include "App.h"
 
 #include "ExchangeComp.h"
+#include "AssetComp.h"
 
 import ExchangeMapModule;
 import ExchangeModule;
@@ -18,6 +19,21 @@ namespace AgisX
 ExchangeMapComp::ExchangeMapComp(Application& app)
 	: _app(app), _exchanges(&app.get_exchanges()), _exchange_ids(&_exchanges->get_exchange_indecies())
 {
+    _children.push_back(std::make_unique<AssetComp>(app));
+    _asset_comp = dynamic_cast<AssetComp*>(_children.back().get());
+}
+
+
+void ExchangeMapComp::on_reset()
+{
+    BaseComp::on_reset();
+}
+
+
+//============================================================================
+void ExchangeMapComp::on_step()
+{
+    BaseComp::on_step();
 }
 
 
@@ -201,9 +217,9 @@ ExchangeMapComp::render()
 
         if (_selected_exchange)
         {
-            auto assets = _selected_exchange.value()->get_assets();
+            auto& assets = _selected_exchange.value()->get_assets();
             int n = 0;
-            for (auto asset : assets)
+            for (auto& asset : assets)
             {
                 // Check if the item matches the search string
                 if (strlen(search_buffer) == 0 || strstr(asset->get_id().c_str(), search_buffer) != nullptr)
@@ -212,8 +228,12 @@ ExchangeMapComp::render()
                     if (ImGui::Selectable(asset->get_id().c_str(), is_selected))
                         item_current_idx = n;
 
-                    if (is_selected)
+                    if (is_selected) 
+                    {
                         ImGui::SetItemDefaultFocus();
+                        if (_asset_comp->get_asset() != asset.get())
+                            _asset_comp->set_asset(asset.get());
+                    }
                 }
                 n++;
             }
@@ -224,6 +244,8 @@ ExchangeMapComp::render()
         }
         ImGui::EndListBox();
     }
+
+    _asset_comp->render();
 
     ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
     ImGui::Checkbox("Demo Window", &instance.get_show_demo_window());      // Edit bools storing our window open/close state
