@@ -1,5 +1,4 @@
 #pragma once
-
 #include "AgisDeclare.h"
 #include "BaseComp.h"
 
@@ -13,19 +12,20 @@ import <vector>;
 import <expected>;
 import <shared_mutex>;
 
-#include "IMGUIQuakeConsole.h"
+#include "imgui.h"
+
 
 #define WRITE_LOCK auto lock = std::unique_lock(_mutex);
 #define READ_LOCK auto lock = std::shared_lock(_mutex);
 
 using namespace Agis;
-using namespace Virtuoso;
 
 namespace AgisX 
 {
 
 class ExchangeMapComp;
 class AssetComp;
+class EditorComp;
 
 
 class ApplicationState
@@ -55,11 +55,11 @@ public:
 	Hydra* get_hydra() { return _hydra.get(); }
 	ExchangeMap const& get_exchanges();
 	bool& get_show_demo_window() { return show_demo_window; }
+	void set_dockspace_id(ImGuiID mainDockID_);
 	
-	void render_console();
 	void render_app_state();
 	void render();
-
+	void init();
 	void reset();
 	std::expected<bool, AgisException> step();
 	std::expected<bool, AgisException> build();
@@ -68,12 +68,6 @@ public:
 	float TEXT_BASE_WIDTH = 0.0f;
 
 private:
-
-	IMGUIQuakeConsole console3;
-	IMGUIInputLine cis;
-
-	void log(std::string const& msg);
-
 	// === Signals === //
 	void emit_new_hydra_ptr();
 	void emit_step();
@@ -84,7 +78,7 @@ private:
 	bool show_demo_window = true;
 	
 	ExchangeMapComp* exchange_comp = nullptr;
-
+	EditorComp* editor_comp = nullptr;
 	ApplicationState _app_state;
 
 	std::string env_name = "default";

@@ -1,10 +1,11 @@
 #include <Windows.h>
 
-#include "imgui.h"
+
 #include "ImGuiFileDialog.h"
 
 #include "App.h"
 #include "ExchangeComp.h"
+#include "EditorComp.h"
 
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
@@ -42,18 +43,11 @@ Application::Application()
 	}
     _env_dir = env_path.string();
 
-    // init exchange map comp
+    // init child components
 	exchange_comp = new ExchangeMapComp(*this);
+    editor_comp = new EditorComp();
     _comps.push_back(exchange_comp);
 
-}
-
-
-//============================================================================
-void Application::render_console()
-{
-    bool pople = true;
-    console3.render("console 2 implementation", pople);
 }
 
 
@@ -69,6 +63,14 @@ ExchangeMap const&
 Application::get_exchanges()
 {
 	return _hydra->get_exchanges();
+}
+
+
+//============================================================================
+void Application::set_dockspace_id(ImGuiID mainDockID_)
+{
+
+    editor_comp->set_dockspace_id(mainDockID_);
 }
 
 
@@ -93,7 +95,7 @@ void Application::render_app_state()
         {
             // Create a new thread to perform deserialization
             std::thread deserializationThread([this] {
-                log("Loading hydra from " + _env_dir);
+                editor_comp->info("Loading hydra from " + _env_dir);
                 auto now = std::chrono::system_clock::now();
                 auto res = deserialize_hydra(_env_dir + "/hydra.json");
                 if (res)
@@ -105,7 +107,7 @@ void Application::render_app_state()
                     emit_new_hydra_ptr();
                     auto end = std::chrono::system_clock::now();
                     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-                    log("Hydra loaded successfully in " + std::to_string(elapsed.count()) + "ms");
+                    editor_comp->info("Hydra loaded successfully in " + std::to_string(elapsed.count()) + "ms");
                 }
                 else
                 {
@@ -223,13 +225,22 @@ Application::render()
     }
     ImGui::Begin("Application");
 
+    // render the app state
 	render_app_state();
 
+    // render the exchange map
     exchange_comp->render();
 
-    render_console();
+    // render the node editor
+    editor_comp->render();
 
     ImGui::End();
+}
+
+void Application::init()
+{
+    auto context = ImGui::GetCurrentContext();
+    editor_comp->init(context);
 }
 
 
@@ -240,15 +251,6 @@ void Application::reset()
 	_app_state.update_time(0, _hydra->get_next_global_time());
 }
 
-
-//============================================================================
-void Application::log(std::string const& msg)
-{
-    auto current_time = std::chrono::system_clock::now();
-    auto epoch = std::chrono::duration_cast<std::chrono::nanoseconds>(current_time.time_since_epoch()).count();
-	auto t = epoch_to_str(epoch, "%Y-%m-%d %H:%M:%S");
-	console3 << "[" << t.value() << "] " << msg << std::endl;
-}
 
 //============================================================================
 void

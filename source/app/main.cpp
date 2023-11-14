@@ -91,7 +91,8 @@ int main(int, char**)
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    ImGuiContext* myImGuiContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(myImGuiContext);
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -122,6 +123,9 @@ int main(int, char**)
     // Our state
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    // ini application
+    instance.init();
+
     // Main loop
     bool done = false;
     while (!done)
@@ -143,7 +147,8 @@ int main(int, char**)
         ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport();
+        auto dockspace_id = ImGui::DockSpaceOverViewport();
+        instance.set_dockspace_id(dockspace_id);
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (instance.get_show_demo_window())
