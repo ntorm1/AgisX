@@ -152,6 +152,7 @@ namespace nged {
     class NodeGraphDoc;
     class Canvas;
     class NodeFactory;
+    class MessageHub;
 
     using GraphItemPtr = std::shared_ptr<GraphItem>;
     using NodePtr = std::shared_ptr<Node>;
@@ -163,6 +164,7 @@ namespace nged {
     using NodeFactoryPtr = std::shared_ptr<NodeFactory>;
     using GraphItemFactoryPtr = std::shared_ptr<GraphItemFactory>;
     using UID = uuids::uuid;
+    using msghub = MessageHub;
 
     // UID Related {{{
     UID generateUID();
@@ -320,7 +322,6 @@ namespace nged {
         AABB aabb_ = { {0, 0}, {0, 0} }; // local aabb
         Vec2 pos_ = { 0, 0 };           // position
 
-        void resetID(ItemID id) { id_ = id; }
 
         GraphItem(GraphItem const&) = delete;
         GraphItem(GraphItem&&) = delete;
@@ -328,6 +329,7 @@ namespace nged {
     public:
         GraphItem(Graph* parent);
         virtual ~GraphItem() = default;
+        void resetID(ItemID id) { id_ = id; }
 
         virtual bool serialize(nlohmann::json&) const;
         virtual bool deserialize(nlohmann::json const&);
@@ -841,37 +843,41 @@ namespace nged {
         }
         sint inputIndexOf(size_t nthNode, int nthInput) const
         {
+            auto nthInput_st = static_cast<size_t>(nthInput);
             auto const& irange = closures_[nthNode].inputs;
             auto        icnt = irange.end - irange.begin;
-            if (nthInput < 0)
-                nthInput += icnt;
-            if (nthInput < 0 || nthInput >= icnt)
+            if (nthInput_st < 0)
+                nthInput_st += icnt;
+            if (nthInput_st < 0 || nthInput_st >= icnt)
                 return -1;
-            return sint(inputs_[irange.begin + nthInput]);
+            return sint(inputs_[irange.begin + nthInput_st]);
         }
         Node* inputOf(size_t nthNode, int nthInput) const
         {
             auto idx = inputIndexOf(nthNode, nthInput);
-            if (idx < 0 || idx >= nodes_.size())
+            auto idx_size_t = static_cast<size_t>(idx);
+            if (idx_size_t < 0 || idx_size_t >= nodes_.size())
                 return nullptr;
-            return nodes_[idx].get();
+            return nodes_[idx_size_t].get();
         }
         sint outputIndexOf(size_t nthNode, int nthOutput) const
         {
             auto const& orange = closures_[nthNode].outputs;
             auto        ocnt = orange.end - orange.begin;
+            auto ocnt_int = static_cast<int>(ocnt);
             if (nthOutput < 0)
-                nthOutput += ocnt;
-            if (nthOutput < 0 || nthOutput >= ocnt)
+                nthOutput += ocnt_int;
+            if (nthOutput < 0 || nthOutput >= ocnt_int)
                 return -1;
             return sint(outputs_[orange.begin + nthOutput]);
         }
         Node* outputOf(size_t nthNode, int nthOutput) const
         {
             auto idx = outputIndexOf(nthNode, nthOutput);
-            if (idx < 0 || idx >= nodes_.size())
+            auto idx_size_t = static_cast<size_t>(idx);
+            if (idx_size_t < 0 || idx_size_t >= nodes_.size())
                 return nullptr;
-            return nodes_[idx].get();
+            return nodes_[idx_size_t].get();
         }
 
         class Accessor

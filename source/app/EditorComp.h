@@ -3,28 +3,32 @@
 
 #include "imgui.h"
 
+
 namespace nged 
 {
-	class DemoApp;
+	class AgisXEditor;
 	class MessageHub;
 }
 
 namespace AgisX
 {
-	class EditorComp
-	{
-	public:
-		EditorComp();
-		~EditorComp();
-		void render();
-		void init(ImGuiContext*);
-		void set_dockspace_id(ImGuiID mainDockID_);
+class Application;
 
-		void info(std::string const& msg);
-		void error(std::string const& msg);
+class EditorComp
+{
+public:
+	EditorComp();
+	~EditorComp();
+	void render();
+	void init(ImGuiContext*, AgisX::Application*);
+	void set_dockspace_id(ImGuiID mainDockID_);
+	bool agree_to_quit();
+	void info(std::string const& msg);
+	void error(std::string const& msg);
 
-	private:
-		nged::DemoApp* _DemoApp;
+private:
+	nged::AgisXEditor* _DemoApp;
 
-	};
+};
+
 }

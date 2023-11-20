@@ -11,7 +11,6 @@ import <shared_mutex>;
 import <optional>;
 import <unordered_map>;
 
-using namespace Agis;
 
 namespace AgisX
 {
@@ -33,10 +32,10 @@ public:
 
 private:
 	mutable std::shared_mutex _mutex;
-	std::optional<AgisException> _exception;
-	std::optional<Exchange const*> _selected_exchange;
+	std::optional<Agis::AgisException> _exception;
+	std::optional<Agis::Exchange const*> _selected_exchange;
 	
-	ExchangeMap const* _exchanges;
+	Agis::ExchangeMap const* _exchanges;
 	std::unordered_map<std::string, size_t> const* _exchange_ids = nullptr;
 
 	Application& _app;

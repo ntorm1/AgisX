@@ -15,6 +15,8 @@ import AgisTimeUtils;
 
 import <filesystem>;
 
+using namespace Agis;
+
 namespace AgisX
 {
 
@@ -73,6 +75,13 @@ void Application::set_dockspace_id(ImGuiID mainDockID_)
     editor_comp->set_dockspace_id(mainDockID_);
 }
 
+
+//============================================================================
+bool
+Application::agree_to_quit()
+{
+    return editor_comp->agree_to_quit();
+}
 
 //============================================================================
 void Application::render_app_state()
@@ -204,6 +213,14 @@ Application::build()
 }
 
 
+//============================================================================
+bool
+Application::exchange_exists(std::string const& name) const noexcept
+{
+    return _hydra->get_exchange(name).has_value();
+}
+
+
 
 //============================================================================
 void
@@ -237,10 +254,12 @@ Application::render()
     ImGui::End();
 }
 
+
+//============================================================================
 void Application::init()
 {
     auto context = ImGui::GetCurrentContext();
-    editor_comp->init(context);
+    editor_comp->init(context, this);
 }
 
 

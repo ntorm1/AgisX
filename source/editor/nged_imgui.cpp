@@ -247,19 +247,21 @@ static Vector<size_t> fuzzy_match_and_argsort(
   StringView                pattern,
   Vector<StringView> const& candidates)
 {
-  Vector<size_t>                 result;
-  Vector<std::pair<int, size_t>> matches;
-  for (size_t i = 0; i < candidates.size(); ++i) {
+    if (pattern.empty())
+        return utils::argsort(candidates);
+    Vector<size_t>                 result;
+    Vector<std::pair<int, size_t>> matches;
+    for (size_t i = 0; i < candidates.size(); ++i) {
     int score = 0;
     if (fuzzy_match(pattern, candidates[i], score)) {
-      matches.emplace_back(score, i);
+        matches.emplace_back(score, i);
     }
-  }
-  std::sort(matches.begin(), matches.end(), std::greater<>());
-  result.resize(matches.size());
-  std::transform(
+    }
+    std::sort(matches.begin(), matches.end(), std::greater<>());
+    result.resize(matches.size());
+    std::transform(
     matches.begin(), matches.end(), result.begin(), [](auto const& pair) { return pair.second; });
-  return result;
+    return result;
 }
 
 static Vector<StringView> fuzzy_match_and_sort(
@@ -721,7 +723,7 @@ void CommandManager::update(GraphView* view)
     if (ImGui::IsWindowAppearing())
       ImGui::SetKeyboardFocusHere(0);
     bool confirmed =
-      ImGui::InputText("##prompt", paletteInput_.data(), ImGuiInputTextFlags_EnterReturnsTrue);
+      ImGui::InputText("##prompt", &paletteInput_, ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::Separator();
     Vector<StringView> cmdDescList;
     Vector<CommandPtr> cmdList;
@@ -831,7 +833,7 @@ public:
   {
     if (ImGui::IsWindowAppearing())
       ImGui::SetKeyboardFocusHere(0);
-    auto recheck = ImGui::InputText("###Name", prompt_.data(), ImGuiInputTextFlags_AutoSelectAll);
+    auto recheck = ImGui::InputText("###Name", &prompt_, ImGuiInputTextFlags_AutoSelectAll);
     recheck |= ImGui::Checkbox("Fuzzy Match", &fuzzy_);
     if (prompt_.empty()) return true;
     if (!view) return false;
@@ -1129,13 +1131,13 @@ public:
         auto& textColor = ImGui::GetStyle().Colors[ImGuiCol_Text];
         // log verbosity -> color
         static const ImVec4 colorMap[] = {
-          {0.5,0.5,0.5,1.0}, // Trace
-          {0.0,0.5,0.1,1.0}, // Debug
-          {1.0,1.0,1.0,1.0}, // Info
-          {1.0,0.5,0.1,1.0}, // Warn
-          {1.0,0.0,0.0,1.0}, // Error
-          {0.6,0.0,0.0,1.0}, // Fatal
-          {1.0,1.0,1.0,1.0}, // Text
+            {0.5f, 0.5f, 0.5f, 1.0f}, // Trace
+            {0.0f, 0.5f, 0.1f, 1.0f}, // Debug
+            {1.0f, 1.0f, 1.0f, 1.0f}, // Info
+            {1.0f, 0.5f, 0.1f, 1.0f}, // Warn
+            {1.0f, 0.0f, 0.0f, 1.0f}, // Error
+            {0.6f, 0.0f, 0.0f, 1.0f}, // Fatal
+            {1.0f, 1.0f, 1.0f, 1.0f}, // Text
         };
         static_assert(sizeof(colorMap)/sizeof(*colorMap) == static_cast<int>(MessageHub::Verbosity::Count),
             "color map missmatch with verbosity count");
@@ -1190,7 +1192,7 @@ public:
     auto* title = "NGED - a Node Graph EDitor";
     auto  fontsize = 20.f * dpiScale();
     auto  textsize = font->CalcTextSizeA(fontsize, FLT_MAX, 0.f, title);
-    auto  textpos = ImVec2((windowsize / 2).x, fontsize * 1.5) - textsize / 2;
+    auto  textpos = ImVec2((windowsize / 2.0f).x, fontsize * 1.5) - textsize / 2;
     drawlist->AddText(font, fontsize, textpos + ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin(), 0xffffffff, title);
     ImGui::SetCursorPos(ImVec2(8, textpos.y + fontsize * 4));
     //ImGui::Separator();

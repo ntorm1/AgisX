@@ -15,7 +15,6 @@
 
 namespace nged {
     typedef nlohmann::json Json;
-    using msghub = MessageHub;
 
     // json {{{
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vec2, x, y);
@@ -607,9 +606,11 @@ namespace nged {
         tipSize_ = json.at("size");
         return true;
     }
+#pragma warning(disable : 4101)
     catch (Json::exception const& err) {
         return false;
     }
+#pragma warning(default : 4101)
     // }}} Arrow
 
     // Graph {{{
@@ -1550,7 +1551,7 @@ namespace nged {
                             }
                             sint const port = link->output().destPort;
                             if (port >= ninput)
-                                ninput = port + 1;
+                                ninput = static_cast<int>(port) + 1;
                             auto writeindex = inputbegin + port;
                             if (writeindex >= inputs.size())
                                 inputs.resize(writeindex + 1, -1);
@@ -1640,13 +1641,13 @@ namespace nged {
             size_t          versionNumber = versions_.size();
             String          data = json.dump();
             auto            size = data.size();
-            Vector<uint8_t> compressedData(mz_compressBound(size));
-            mz_ulong        compressedLen = compressedData.size();
+            Vector<uint8_t> compressedData(mz_compressBound(static_cast<mz_ulong>(size)));
+            mz_ulong        compressedLen = static_cast<mz_ulong>(compressedData.size());
             mz_compress(
                 compressedData.data(),
                 &compressedLen,
                 reinterpret_cast<uint8_t const*>(data.data()),
-                data.size());
+                static_cast<mz_ulong>(data.size()));
             compressedData.resize(compressedLen);
             versions_.push_back({ std::move(compressedData), std::move(msg), size });
             assert(versionNumber + 1 == versions_.size());
@@ -1680,13 +1681,13 @@ namespace nged {
         }
         ++atEditGroupLevel_; // suspend auto commit from editGroups
         String   uncompressedData;
-        mz_ulong uncompressedSize = versions_[version].uncompressedSize;
+        mz_ulong uncompressedSize = static_cast<mz_ulong>(versions_[version].uncompressedSize);
         uncompressedData.resize(uncompressedSize);
         auto result = mz_uncompress(
             reinterpret_cast<uint8_t*>(uncompressedData.data()),
             &uncompressedSize,
             versions_[version].data.data(),
-            versions_[version].data.size());
+            static_cast<mz_ulong>(versions_[version].data.size()));
         if (result != MZ_OK)
             throw std::runtime_error("failed to decompress history data");
         Json json = Json::parse(uncompressedData);

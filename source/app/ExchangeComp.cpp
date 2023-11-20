@@ -10,6 +10,7 @@ import ExchangeMapModule;
 import ExchangeModule;
 import AssetModule;
 
+using namespace Agis;
 
 namespace AgisX
 {
