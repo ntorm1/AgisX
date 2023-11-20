@@ -55,7 +55,7 @@ void AgisXEditor::init(AgisX::Application* app)
     editor = nged::newImGuiNodeGraphEditor();
     editor->setResponser(std::make_shared<AgisX::AgisXResponser>());
     editor->setItemFactory(nged::addImGuiItems(nged::defaultGraphItemFactory()));
-    editor->setViewFactory(nged::defaultViewFactory());
+    editor->setViewFactory(nged::defaultViewFactory(*app));
     editor->setNodeFactory(std::make_shared<AgisX::AgisxNodeFactory>(*app));
     editor->initCommands();
     nged::addImGuiInteractions();

@@ -15,7 +15,7 @@ namespace AgisX
 AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
     : Graph(root, parent, name)
 {
-    auto outputNode = std::make_shared<AgisXAllocationNode>(this, "output", "output", 1);
+    auto outputNode = std::make_shared<AgisXAllocationNode>(this, "AllocationNode", "Allocation", 0);
     outputNodeID_ = docRoot()->addItem(outputNode);
     outputNode->resetID(outputNodeID_);
     items_.insert(outputNodeID_);
@@ -132,7 +132,7 @@ void AgisXGraph::markNodeAndDownstreamDirty(ItemID id)
         for (auto id : parent_->items()) {
             if (auto* node = parent_->get(id)->asNode()) {
                 if (node->asGraph() == static_cast<Graph*>(this)) {
-                    //static_cast<S7Graph*>(parent_)->markNodeAndDownstreamDirty(id);
+                    static_cast<AgisXGraph*>(parent_)->markNodeAndDownstreamDirty(id);
                     break;
                 }
             }

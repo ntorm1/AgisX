@@ -29,6 +29,7 @@ public:
 	void on_reset() override;
 	void on_step() override;
 	void on_hydra_restore() override;
+	std::vector<std::string> const& get_exchange_columns(std::string const& exchange_id) const noexcept;
 
 private:
 	mutable std::shared_mutex _mutex;

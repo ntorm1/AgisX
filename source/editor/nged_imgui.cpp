@@ -6,6 +6,8 @@
 #include "spdlog/spdlog.h"
 #include "res/fa_icondef.h"
 
+#include "../app/AgisXDeclare.h"
+
 #include <nlohmann/json.hpp>
 
 #include <imgui.h>
@@ -15,6 +17,8 @@
 #include <charconv>
 #include <limits>
 #include <memory>
+
+import AgisXExchangeViewModule;
 
 // string format support {{{
 template<>
@@ -1037,7 +1041,7 @@ public:
 };
 // }}} NetworkView
 
-// Inspector View {{{
+//============================================================================s
 class ImGuiInspectorView : public ImGuiGraphView<ImGuiInspectorView, InspectorView>
 {
 public:
@@ -1097,9 +1101,8 @@ public:
     }
   }
 };
-// }}} Inspector View
 
-// Message View {{{
+//============================================================================
 class ImGuiMessageView: public ImGuiGraphView<ImGuiMessageView, GraphView>
 {
   String tabToOpen_ = "";
@@ -1172,9 +1175,10 @@ public:
     }
   }
 };
-// }}} Message View
 
-// Help View {{{
+
+
+//============================================================================
 class ImGuiHelpView : public ImGuiGraphView<ImGuiHelpView, GraphView>
 {
 public:
@@ -1240,20 +1244,20 @@ public:
 // Default Views {{{
 class SimpleViewFactory : public ViewFactory
 {
-  HashMap<String, GraphViewPtr (*)(NodeGraphEditor*, NodeGraphDocPtr)> factories_;
+  HashMap<String, GraphViewPtr (*)(AgisX::Application& _instance, NodeGraphEditor*, NodeGraphDocPtr)> factories_;
   SimpleViewFactory(SimpleViewFactory const&) = delete;
-
+  AgisX::Application& _instance;
 public:
-  SimpleViewFactory() = default;
+  SimpleViewFactory(AgisX::Application& instance) : _instance(instance) {}
 
-  void add(String const& kind, GraphViewPtr (*factory)(NodeGraphEditor*, NodeGraphDocPtr))
+  void add(String const& kind, GraphViewPtr (*factory)(AgisX::Application& _instance,NodeGraphEditor*, NodeGraphDocPtr))
   {
     factories_[kind] = factory;
   }
   GraphViewPtr createView(String const& kind, NodeGraphEditor* editor, NodeGraphDocPtr doc) const override
   {
     if (auto itr = factories_.find(kind); itr != factories_.end()) {
-      if (auto viewptr = itr->second(editor, doc)) {
+      if (auto viewptr = itr->second(_instance,editor, doc)) {
         ViewFactory::finalize(viewptr.get(), kind, editor);
         return viewptr;
       }
@@ -1262,20 +1266,23 @@ public:
   }
 };
 
-ViewFactoryPtr defaultViewFactory()
+ViewFactoryPtr defaultViewFactory(AgisX::Application& instance)
 {
-  auto factory = std::make_shared<SimpleViewFactory>();
-  factory->add("network", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  auto factory = std::make_shared<SimpleViewFactory>(instance);
+  factory->add("network", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiNetworkView>(editor, doc);
   });
-  factory->add("inspector", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("inspector", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiInspectorView>(editor);
   });
-  factory->add("message", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("message", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiMessageView>(editor);
   });
-  factory->add("help", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("help", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiHelpView>(editor);
+  });
+  factory->add("Exchanges", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXExchangeView>(_instance,editor);
   });
   return factory;
 }

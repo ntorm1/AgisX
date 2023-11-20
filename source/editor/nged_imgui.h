@@ -165,6 +165,7 @@ class ImGuiNodeGraphEditor : public NodeGraphEditor
 
   String  defaultLayoutDesc_=R"(vsplit:
   hsplit:7
+    Exchanges:3:hide_tab_bar
     network:5
     inspector:3:hide_tab_bar
   message:3:hide_tab_bar)";

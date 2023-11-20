@@ -3,6 +3,7 @@
 #include "ImGuiFileDialog.h"
 #include "App.h"
 
+
 #include "ExchangeComp.h"
 #include "AssetComp.h"
 
@@ -11,6 +12,7 @@ import ExchangeModule;
 import AssetModule;
 
 using namespace Agis;
+
 
 namespace AgisX
 {
@@ -45,6 +47,19 @@ void ExchangeMapComp::on_hydra_restore()
     _exchanges = &_app.get_exchanges();
     _exchange_ids = &_exchanges->get_exchange_indecies();
     _selected_exchange = std::nullopt;
+}
+
+
+//============================================================================
+std::vector<std::string> const&
+ExchangeMapComp::get_exchange_columns(std::string const& exchange_id) const noexcept
+{
+    auto exchange_opt = _exchanges->get_exchange(exchange_id);
+    if (!exchange_opt)
+    {
+        return std::vector<std::string>();
+    }
+    return exchange_opt.value()->get_columns();
 }
 
 

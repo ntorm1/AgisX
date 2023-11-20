@@ -6,7 +6,10 @@ module;
 module AgisXNodeFactory;
 
 import AgisXGraph;
+
 import AgisXNode;
+import AgisXExchangeNodeMod;
+import AgisXAssetNodeMod;
 
 using namespace nged;
 
@@ -18,7 +21,7 @@ namespace AgisX
 static const AgisXNodeDef builtinNodeDefs_[] = {
 	{"ExchangeNode", "Exchange",0},
     {"ExchangeViewNode", "Exchange View", 2},
-    {"AssetReadNode", "Asset Read",0},
+    {"AssetReadNode", "Asset Read",1},
     {"AssetOpNode", "Asset Op",2},
     {"AllocationNode", "Allocation", 1}
 };
@@ -45,7 +48,7 @@ AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
     if (type == "ExchangeNode")
 		return std::make_shared<AgisXExchangeNode>(parent, type, "Exchange", 0);
     else if (type == "AssetReadNode")
-        return std::make_shared<AgisXAssetReadNode>(parent, type, "Asset Read", 0);
+        return std::make_shared<AgisXAssetReadNode>(parent, type, "Asset Read", 1);
 	else if (type == "AssetOpNode")
         return std::make_shared<AgisXAssetOpNode>(parent, type, "Asset Op", 2);
     else if (type == "AllocationNode")

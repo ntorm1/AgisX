@@ -1077,6 +1077,15 @@ void NodeGraphEditor::initCommands()
     }
   }).setMayModifyGraph(false);
   mgr.add(new SimpleCommand{
+  "View/Exchanges",
+  "Open Exchange View",
+  [](GraphView* view, StringView args) {
+    if (auto exchange_view = view->editor()->addView(view->doc(), "Exchanges")) {
+        msghub::info("exchange view opened");
+    }
+  }
+  }).setMayModifyGraph(false);
+  mgr.add(new SimpleCommand{
     "View/Messages",
     "Open Messages View",
     [](GraphView* view, StringView args) {

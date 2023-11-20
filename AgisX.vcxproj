@@ -161,6 +161,10 @@
     <ClCompile Include="source\editor\nged_imgui.cpp" />
     <ClCompile Include="source\editor\nged_imgui_fonts.cpp" />
     <ClCompile Include="source\editor\nodes.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.ixx" />
     <ClCompile Include="source\editor\nodes\AgisXGraph.cpp" />
     <ClCompile Include="source\editor\nodes\AgisXGraph.ixx" />
     <ClCompile Include="source\editor\nodes\AgisXNode.cpp" />
@@ -171,6 +175,7 @@
     <ClCompile Include="source\editor\nodes\AgisXResponser.ixx" />
     <ClCompile Include="source\editor\nodes\AgisXSerialize.cpp" />
     <ClCompile Include="source\editor\style.cpp" />
+    <ClCompile Include="source\editor\views\AgisXExchangeView.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgisCore.vcxproj">
@@ -210,6 +215,7 @@
     <ClInclude Include="source\editor\gmath.h" />
     <ClInclude Include="source\editor\ngdoc.h" />
     <ClInclude Include="source\editor\nged.h" />
+    <ClInclude Include="source\editor\nged_graph_view.h" />
     <ClInclude Include="source\editor\nged_imgui.h" />
     <ClInclude Include="source\editor\nodes.h" />
     <ClInclude Include="source\editor\nodes\AgisXSerialize.h" />

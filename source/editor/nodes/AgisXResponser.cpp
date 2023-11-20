@@ -29,6 +29,11 @@ void AgisXResponser::onInspect(InspectorView* view, GraphItem** items, size_t nu
     if (auto* node = solyNode) {
         auto* agisx_node = static_cast<AgisXNode*>(node);
         ImGui::PushFont(ImGuiResource::instance().monoFont);
+        ImGui::PushItemWidth(-1);
+        if (
+            ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow) && !ImGui::IsAnyItemActive() &&
+            !ImGui::IsAnyItemFocused() && !ImGui::IsMouseClicked(0))
+            ImGui::SetKeyboardFocusHere();
         agisx_node->render_inspector();
         ImGui::PopFont();
         ImGui::Separator();
@@ -58,6 +63,9 @@ void AgisXResponser::onInspect(InspectorView* view, GraphItem** items, size_t nu
                 msghub::infof("focusing window {}", imguiWindow->titleWithId());
                 ImGui::SetWindowFocus(imguiWindow->titleWithId().c_str());
             }
+        }
+        else {
+			msghub::infof("unfocusing window");
         }
     }
 }

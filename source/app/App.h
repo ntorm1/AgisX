@@ -52,7 +52,7 @@ public:
 
 	std::string const & get_env_name() const { return env_name; }
 	Agis::Hydra* get_hydra() { return _hydra.get(); }
-	Agis::ExchangeMap const& get_exchanges();
+	Agis::ExchangeMap const& get_exchanges() const noexcept;
 	bool& get_show_demo_window() { return show_demo_window; }
 	void set_dockspace_id(ImGuiID mainDockID_);
 	
@@ -64,6 +64,8 @@ public:
 	std::expected<bool, Agis::AgisException> step();
 	std::expected<bool, Agis::AgisException> build();
 
+
+	std::vector<std::string> const& get_exchange_columns(std::string const& exchange_id) const noexcept;
 	bool exchange_exists(std::string const& name) const noexcept;
 
 	float TEXT_BASE_HEIGHT = 0.0f;

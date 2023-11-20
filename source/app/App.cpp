@@ -62,7 +62,7 @@ Application::~Application()
 
 //============================================================================
 ExchangeMap const&
-Application::get_exchanges()
+Application::get_exchanges() const noexcept
 {
 	return _hydra->get_exchanges();
 }
@@ -73,6 +73,14 @@ void Application::set_dockspace_id(ImGuiID mainDockID_)
 {
 
     editor_comp->set_dockspace_id(mainDockID_);
+}
+
+
+//============================================================================
+std::vector<std::string> const&
+Application::get_exchange_columns(std::string const& exchange_id) const noexcept
+{
+    return exchange_comp->get_exchange_columns(exchange_id);
 }
 
 
@@ -187,10 +195,21 @@ Application::step()
 	}
 
     auto lock = _hydra->__aquire_write_lock();
+    auto now = std::chrono::system_clock::now();
     auto res = _hydra->step();
+    auto end = std::chrono::system_clock::now();
 
     if (!res) return res;
-    
+    std::string timeMessage;
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - now);
+    if (elapsed.count() < 1000) {
+        timeMessage = "Hydra stepped successfully in " + std::to_string(elapsed.count()) + "us";
+    }
+    else {
+        auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+        timeMessage = "Hydra stepped successfully in " + std::to_string(elapsedMillis.count()) + "ms";
+    }
+    editor_comp->info(timeMessage);
     long long global_epoch = _hydra->get_global_time();
     long long next_epoch = _hydra->get_next_global_time();
     _app_state.update_time(global_epoch, next_epoch);

@@ -105,6 +105,21 @@
     <ClCompile Include="source\editor\nodes\AgisXResponser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXExchangeView.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\app\ExchangeComp.h">
@@ -228,6 +243,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\app\AgisXDeclare.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\nged_graph_view.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
