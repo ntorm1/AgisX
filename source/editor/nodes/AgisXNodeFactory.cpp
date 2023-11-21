@@ -1,6 +1,7 @@
 module;
 
 #include "../ngdoc.h"
+#include "../nged_imgui.h"
 #include "../../app/AgisXDeclare.h"
 
 module AgisXNodeFactory;
@@ -28,9 +29,9 @@ static const AgisXNodeDef builtinNodeDefs_[] = {
 
 
 //==================================================================================================
-AgisxNodeFactory::AgisxNodeFactory(AgisX::Application& instance) : _instance(instance)
+AgisxNodeFactory::AgisxNodeFactory() : _instance(nged::appState())
 {
-    AgisXNode::set_instance(&instance);
+    AgisXNode::set_instance(&nged::appState());
 }
 
 

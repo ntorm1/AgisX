@@ -16,7 +16,7 @@ using namespace nged;
 namespace AgisX
 {
 
-Application* AgisXNode::_instance = nullptr;
+AgisX::AppState* AgisXNode::_instance = nullptr;
 
 
 //==================================================================================================
@@ -55,7 +55,7 @@ AgisXNode::AgisXNode(
 
 //==================================================================================================
 void
-AgisXNode::set_instance(Application* instance)
+AgisXNode::set_instance(AgisX::AppState* instance)
 {
 	_instance = instance; 
 }

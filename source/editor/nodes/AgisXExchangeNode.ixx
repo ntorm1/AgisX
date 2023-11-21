@@ -27,9 +27,9 @@ public:
 
 	std::string const& exchangeName() const { return _exchange_name; }
 	bool exchange_exists() const noexcept;
+	std::vector<std::string> get_columns() const noexcept;
 
 private:
-
 	std::string _exchange_name = "";
 
 };

@@ -4,7 +4,6 @@
 #include "ImGuiFileDialog.h"
 
 #include "App.h"
-#include "ExchangeComp.h"
 #include "EditorComp.h"
 
 #include <rapidjson/allocators.h>
@@ -46,17 +45,14 @@ Application::Application()
     _env_dir = env_path.string();
 
     // init child components
-	exchange_comp = new ExchangeMapComp(*this);
     editor_comp = new EditorComp();
-    _comps.push_back(exchange_comp);
-
 }
 
 
 //============================================================================
 Application::~Application()
 {
-	delete exchange_comp;
+	delete editor_comp;
 }
 
 
@@ -73,14 +69,6 @@ void Application::set_dockspace_id(ImGuiID mainDockID_)
 {
 
     editor_comp->set_dockspace_id(mainDockID_);
-}
-
-
-//============================================================================
-std::vector<std::string> const&
-Application::get_exchange_columns(std::string const& exchange_id) const noexcept
-{
-    return exchange_comp->get_exchange_columns(exchange_id);
 }
 
 
@@ -259,18 +247,8 @@ Application::render()
         ImGui::EndPopup();
         return;
     }
-    ImGui::Begin("Application");
-
-    // render the app state
-	render_app_state();
-
-    // render the exchange map
-    exchange_comp->render();
-
     // render the node editor
     editor_comp->render();
-
-    ImGui::End();
 }
 
 
@@ -298,6 +276,10 @@ Application::emit_new_hydra_ptr()
     {
 		comp->on_hydra_restore();
 	}
+    for (auto& [view_name, view] : _views)
+    {
+        //view->on_hydra_restore();
+    }
 }
 
 
@@ -305,7 +287,6 @@ Application::emit_new_hydra_ptr()
 void
 Application::emit_step()
 {
-    exchange_comp->on_step();
 }
 
 
@@ -313,7 +294,6 @@ Application::emit_step()
 void
 Application::emit_reset()
 {
-    exchange_comp->on_reset();
 }
 
 

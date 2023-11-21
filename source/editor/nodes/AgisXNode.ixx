@@ -21,14 +21,14 @@ export class AgisXNode : public nged::Node
 
 private:
 	mutable std::vector<std::pair<AgisXNode*, nged::sint>> _dests;
-	static Application* _instance;
-	static void set_instance(Application* instance);
+	static AgisX::AppState* _instance;
+	static void set_instance(AgisX::AppState* instance);
 	int _intputs = -1;
 	bool _dirty = false;
 	bool _editable = true;
 
 protected:
-	Application const& app() const { return *_instance; }
+	AgisX::AppState const& app() const { return *_instance; }
 	void remove_downstream_links() const;
 public:
 	AgisXNode(nged::Graph* parent, nged::StringView type, nged::StringView name, int num_inputs);

@@ -1,8 +1,10 @@
 #pragma once
 
-#include "ngdoc.h"
+#include "nged_declare.h"
+#include <imgui_internal.h>
 
 namespace nged {
+
 
 // View {{{
 class GraphView : public std::enable_shared_from_this<GraphView>
@@ -49,6 +51,10 @@ public:
 	virtual void  onGraphModified() = 0;
 	virtual void  draw() = 0;
 
+	virtual void on_hydra_restore() {};
+	virtual void on_step() {};
+	virtual void on_reset() {};
+
 	// events are customable, may be "focus", "select", "delete", ...
 	virtual void onViewEvent(GraphView* view, StringView eventType) {}
 	// try to execute certain command, but anything can happen in response,
@@ -60,5 +66,6 @@ public:
 };
 
 using GraphViewPtr = std::shared_ptr<GraphView>;
+
 
 }

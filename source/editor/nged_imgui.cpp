@@ -18,7 +18,12 @@
 #include <limits>
 #include <memory>
 
+
+import AgisXApp;
+static AgisX::AppState app_state;
+
 import AgisXExchangeViewModule;
+import AgisXAppViewModule;
 
 // string format support {{{
 template<>
@@ -40,6 +45,11 @@ struct fmt::formatter<gmath::Vec2>
 // }}}
 
 namespace nged {
+
+AgisX::AppState& appState()
+{
+    return app_state;
+}
 
 using msghub = MessageHub;
 
@@ -1244,45 +1254,49 @@ public:
 // Default Views {{{
 class SimpleViewFactory : public ViewFactory
 {
-  HashMap<String, GraphViewPtr (*)(AgisX::Application& _instance, NodeGraphEditor*, NodeGraphDocPtr)> factories_;
-  SimpleViewFactory(SimpleViewFactory const&) = delete;
-  AgisX::Application& _instance;
+    HashMap<String, GraphViewPtr (*)(AgisX::AppState& _instance, NodeGraphEditor*, NodeGraphDocPtr)> factories_;
+    SimpleViewFactory(SimpleViewFactory const&) = delete;
+    
 public:
-  SimpleViewFactory(AgisX::Application& instance) : _instance(instance) {}
+    SimpleViewFactory() {}
 
-  void add(String const& kind, GraphViewPtr (*factory)(AgisX::Application& _instance,NodeGraphEditor*, NodeGraphDocPtr))
-  {
+    void add(String const& kind, GraphViewPtr (*factory)(AgisX::AppState& _instance,NodeGraphEditor*, NodeGraphDocPtr))
+    {
     factories_[kind] = factory;
-  }
-  GraphViewPtr createView(String const& kind, NodeGraphEditor* editor, NodeGraphDocPtr doc) const override
-  {
+    }
+    GraphViewPtr createView(String const& kind, NodeGraphEditor* editor, NodeGraphDocPtr doc) const override
+    {
     if (auto itr = factories_.find(kind); itr != factories_.end()) {
-      if (auto viewptr = itr->second(_instance,editor, doc)) {
-        ViewFactory::finalize(viewptr.get(), kind, editor);
-        return viewptr;
-      }
+        if (auto viewptr = itr->second(app_state,editor, doc)) {
+            app_state.add_view(kind,viewptr);
+            ViewFactory::finalize(viewptr.get(), kind, editor);
+            return viewptr;
+        }
     }
     return nullptr;
-  }
+    }
 };
 
-ViewFactoryPtr defaultViewFactory(AgisX::Application& instance)
+ViewFactoryPtr defaultViewFactory()
 {
-  auto factory = std::make_shared<SimpleViewFactory>(instance);
-  factory->add("network", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  auto factory = std::make_shared<SimpleViewFactory>();
+  factory->add("network", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiNetworkView>(editor, doc);
   });
-  factory->add("inspector", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("inspector", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiInspectorView>(editor);
   });
-  factory->add("message", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("message", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiMessageView>(editor);
   });
-  factory->add("help", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("help", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiHelpView>(editor);
   });
-  factory->add("Exchanges", [](AgisX::Application& _instance,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
-      return std::make_shared<AgisX::AgisXExchangeView>(_instance,editor);
+  factory->add("Exchanges", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXExchangeView>(_app_state,editor);
+  });
+  factory->add("AppState", [](AgisX::AppState& _app_state, NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXAppView>(_app_state, editor);
   });
   return factory;
 }

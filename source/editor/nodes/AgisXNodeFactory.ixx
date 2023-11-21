@@ -22,8 +22,8 @@ export struct AgisXNodeDef
 export class AgisxNodeFactory: public nged::NodeFactory
 {
 public:
-	AgisxNodeFactory(AgisX::Application& instance);
-	AgisX::Application& _instance;
+	AgisxNodeFactory();
+	AgisX::AppState& _instance;
 
 	nged::GraphPtr createRootGraph(nged::NodeGraphDoc* doc) const override;
 	nged::NodePtr createNode(nged::Graph* parent, std::string_view type) const override;

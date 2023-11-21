@@ -1,15 +1,16 @@
 module;
 #include "../nged_imgui.h"
 #include "../ngdoc.h"
-#include "../../app/App.h"
 
 #include "AgisXSerialize.h"
 
 #include "AgisAST.h"
 
 module AgisXExchangeNodeMod;
-
 import AgisXGraph;
+import AgisXApp;
+
+import ExchangeModule;
 
 using namespace nged;
 
@@ -43,9 +44,20 @@ bool AgisXExchangeNode::deserialize(Json const& json)
 
 //==================================================================================================
 bool
-	AgisXExchangeNode::exchange_exists() const noexcept
+AgisXExchangeNode::exchange_exists() const noexcept
 {
-	return app().exchange_exists(_exchange_name);
+	return app().get_exchange(_exchange_name).has_value();
+}
+
+
+//==================================================================================================
+std::vector<std::string> AgisXExchangeNode::get_columns() const noexcept
+{
+	auto exchange_opt = app().get_exchange(_exchange_name);
+	if(!exchange_opt) {
+		return {};
+	}
+	return (*exchange_opt)->get_columns();
 }
 
 

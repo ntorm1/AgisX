@@ -1,5 +1,6 @@
 #pragma once
 #include "AgisDeclare.h"
+#include "AgisXDeclare.h"
 #include "BaseComp.h"
 
 import HydraModule;
@@ -11,6 +12,7 @@ import <memory>;
 import <vector>;
 import <expected>;
 import <shared_mutex>;
+import <unordered_map>;
 
 #include "imgui.h"
 
@@ -63,9 +65,8 @@ public:
 	void reset();
 	std::expected<bool, Agis::AgisException> step();
 	std::expected<bool, Agis::AgisException> build();
+	void add_view(std::string const& name, nged::GraphViewPtr view){ _views[name] = view; }
 
-
-	std::vector<std::string> const& get_exchange_columns(std::string const& exchange_id) const noexcept;
 	bool exchange_exists(std::string const& name) const noexcept;
 
 	float TEXT_BASE_HEIGHT = 0.0f;
@@ -77,11 +78,12 @@ private:
 	void emit_step();
 	void emit_reset();
 
+	std::unordered_map<std::string, nged::GraphViewPtr> _views;
 	std::vector<BaseComp*> _comps;
+
 	std::optional<Agis::AgisException> _exception;
 	bool show_demo_window = true;
 	
-	ExchangeMapComp* exchange_comp = nullptr;
 	EditorComp* editor_comp = nullptr;
 	ApplicationState _app_state;
 

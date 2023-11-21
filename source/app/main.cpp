@@ -154,8 +154,8 @@ int main(int, char**)
         instance.set_dockspace_id(dockspace_id);
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (instance.get_show_demo_window())
-            ImGui::ShowDemoWindow(&instance.get_show_demo_window());
+        //if (instance.get_show_demo_window())
+        //    ImGui::ShowDemoWindow(&instance.get_show_demo_window());
 
         ImGuiViewport* viewport = (ImGuiViewport*)(void*) ImGui::GetMainViewport();
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;

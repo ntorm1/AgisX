@@ -1,14 +1,13 @@
 module;
 #include "../nged_imgui.h"
 #include "../ngdoc.h"
-#include "../../app/App.h"
 
 #include "AgisXSerialize.h"
 
 #include "AgisAST.h"
 
 module AgisXAssetNodeMod;
-
+import AgisXApp;
 import AgisXExchangeNodeMod;
 
 using namespace nged;
@@ -50,6 +49,7 @@ AgisXAssetReadNode::acceptInput(nged::sint port, Node const* sourceNode, nged::s
 		MessageHub::errorf("exchange {} not found", node->exchangeName());
 		return false;
 	}
+	_columns = node->get_columns();
 	return true;
 }
 
@@ -65,16 +65,15 @@ void AgisXAssetReadNode::render_inspector() noexcept
 	else {
 		auto exchange_node = static_cast<AgisXExchangeNode*>(exchange_parent.get());
 		ImGui::Text("exchange: %s", exchange_node->exchangeName().c_str());
-		auto const& columns = app().get_exchange_columns(exchange_node->exchangeName());
-		if (!columns.size()){
+		if (!_columns.size()){
 			ImGui::Text("no columns");
 		}
 		else {
 			ImGui::Text("column: ");
 			ImGui::SameLine();
 			std::vector<const char*> columnItems;
-			columnItems.reserve(columns.size());
-			for (const auto& column : columns) {
+			columnItems.reserve(_columns.size());
+			for (const auto& column : _columns) {
 				columnItems.push_back(column.c_str());
 			}
 			int current_item = _column;
@@ -93,7 +92,7 @@ void AgisXAssetReadNode::render_inspector() noexcept
 			if (_column != current_item || _index != current_index) {
 				setDirty(true);
 				auto n = name();
-				rename(columns[_column] + std::to_string(_index), n);
+				rename(_columns[_column] +" " + std::to_string(_index), n);
 			}
 		}
 	}

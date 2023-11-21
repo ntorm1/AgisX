@@ -147,9 +147,7 @@
     <ClCompile Include="external\nfd\nfd_common.c" />
     <ClCompile Include="external\nfd\nfd_win.cpp" />
     <ClCompile Include="source\app\AppStyle.cpp" />
-    <ClCompile Include="source\app\AssetComp.cpp" />
     <ClCompile Include="source\app\EditorComp.cpp" />
-    <ClCompile Include="source\app\ExchangeComp.cpp" />
     <ClCompile Include="source\app\main.cpp" />
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="source\app\App.cpp" />
@@ -175,7 +173,11 @@
     <ClCompile Include="source\editor\nodes\AgisXResponser.ixx" />
     <ClCompile Include="source\editor\nodes\AgisXSerialize.cpp" />
     <ClCompile Include="source\editor\style.cpp" />
+    <ClCompile Include="source\editor\views\AgisXApp.cpp" />
+    <ClCompile Include="source\editor\views\AgisXApp.ixx" />
+    <ClCompile Include="source\editor\views\AgisXAppView.ixx" />
     <ClCompile Include="source\editor\views\AgisXExchangeView.ixx" />
+    <ClCompile Include="source\editor\views\AgisXPrivate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgisCore.vcxproj">
@@ -206,15 +208,14 @@
     <ClInclude Include="external\nged\utils.h" />
     <ClInclude Include="source\app\AgisXDeclare.h" />
     <ClInclude Include="source\app\AppStyle.h" />
-    <ClInclude Include="source\app\AssetComp.h" />
     <ClInclude Include="source\app\BaseComp.h" />
     <ClInclude Include="source\app\EditorComp.h" />
-    <ClInclude Include="source\app\ExchangeComp.h" />
     <ClInclude Include="source\app\Helpers.h" />
     <ClInclude Include="source\editor\editor.h" />
     <ClInclude Include="source\editor\gmath.h" />
     <ClInclude Include="source\editor\ngdoc.h" />
     <ClInclude Include="source\editor\nged.h" />
+    <ClInclude Include="source\editor\nged_declare.h" />
     <ClInclude Include="source\editor\nged_graph_view.h" />
     <ClInclude Include="source\editor\nged_imgui.h" />
     <ClInclude Include="source\editor\nodes.h" />
@@ -225,6 +226,7 @@
     <ClInclude Include="source\editor\res\sourcecodepro.hpp" />
     <ClInclude Include="source\editor\style.h" />
     <ClInclude Include="source\editor\utils.h" />
+    <ClInclude Include="source\editor\views\AgisXPrivate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -28,6 +28,7 @@ public:
 	virtual bool deserialize(nged::Json const& json) override;
 
 private:
+	mutable std::vector<std::string> _columns;
 	int _column = 0;
 	int _index = 0;
 };

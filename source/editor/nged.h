@@ -24,7 +24,7 @@ public:
 };
 using ViewFactoryPtr = std::shared_ptr<ViewFactory>;
 
-ViewFactoryPtr defaultViewFactory(AgisX::Application& instance);
+ViewFactoryPtr defaultViewFactory();
 // }}} View
 
 // NetworkView & Interaction {{{
@@ -290,7 +290,7 @@ public:
 
   void onDocModified() override;
   void onGraphModified() override;
-  Vec2 defaultSize() const override { return {400, 600}; }
+  Vec2 defaultSize() const override { return {200, 600}; }
 
   void setInspectingItems(HashSet<ItemID> const& ids);
   void linkToView(GraphView* view)

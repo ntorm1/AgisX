@@ -4,9 +4,12 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
-
+#include "../app/AgisXDeclare.h"
+#include "nged_graph_view.h"
 
 namespace nged {
+
+AgisX::AppState& appState();
 
 std::shared_ptr<NodeGraphEditor> newImGuiNodeGraphEditor();
 GraphItemFactoryPtr              addImGuiItems(GraphItemFactoryPtr factory);
@@ -73,6 +76,19 @@ protected:
   float dt_       = 0.f;
   float dpiScale_ = 1.f;
   ImGuiWindowFlags windowFlags_ = 0;
+
+  // variadic template info func
+  template<class... T>
+  void infof(T... args)
+  {
+      nged::MessageHub::infof(std::forward<T>(args)...);
+  }
+  template<class... T>
+  void errorf(T... args)
+  {
+      nged::MessageHub::errorf(std::forward<T>(args)...);
+  }
+
 
 public:
   template<class... T>
@@ -165,7 +181,8 @@ class ImGuiNodeGraphEditor : public NodeGraphEditor
 
   String  defaultLayoutDesc_=R"(vsplit:
   hsplit:7
-    Exchanges:3:hide_tab_bar
+    AppState:3:hide_tab_bar
+    Exchanges:5
     network:5
     inspector:3:hide_tab_bar
   message:3:hide_tab_bar)";
