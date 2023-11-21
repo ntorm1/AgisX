@@ -30,16 +30,7 @@
     <ClCompile Include="source\app\App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\app\ExchangeComp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\app\AppStyle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\app\AssetComp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\app\EditorComp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\editor\editor.cpp">
@@ -75,11 +66,68 @@
     <ClCompile Include="external\nfd\nfd_win.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="external\boxer\boxer_win.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXNodeFactory.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXNodeFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXNode.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\app\EditorComp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXGraph.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXSerialize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXResponser.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXResponser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXExchangeView.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXApp.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXAppView.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPrivate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\app\ExchangeComp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\app\BaseComp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -90,9 +138,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\app\AppStyle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\app\AssetComp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\app\Helpers.h">
@@ -114,9 +159,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\nged\utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\app\EditorComp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\include\miniz.h">
@@ -189,6 +231,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\editor\res\sourcecodepro.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="external\include\boxer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\app\EditorComp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\nodes\AgisXSerialize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\app\AgisXDeclare.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\nged_graph_view.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\nged_declare.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\views\AgisXPrivate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

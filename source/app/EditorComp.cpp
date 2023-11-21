@@ -12,7 +12,7 @@ namespace AgisX
 	//============================================================================
 	EditorComp::EditorComp()
 	{
-		_DemoApp = new nged::DemoApp();
+		_DemoApp = new nged::AgisXEditor();
 	}
 
 
@@ -26,14 +26,14 @@ namespace AgisX
 	//============================================================================
 	void EditorComp::render()
 	{
-		_DemoApp->update(nullptr);
+		_DemoApp->render();
 	}
 
 
 	//============================================================================
-	void EditorComp::init(ImGuiContext* ctx)
+	void EditorComp::init(ImGuiContext* ctx, Application* app)
 	{
-		_DemoApp->init(ctx);
+		_DemoApp->init(app);
 	}
 
 
@@ -41,6 +41,11 @@ namespace AgisX
 	void EditorComp::set_dockspace_id(ImGuiID mainDockID_)
 	{
 		_DemoApp->set_dockspace_id(mainDockID_);
+	}
+
+	bool EditorComp::agree_to_quit()
+	{
+		return _DemoApp->agreeToQuit();
 	}
 
 

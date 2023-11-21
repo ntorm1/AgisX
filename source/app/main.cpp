@@ -65,6 +65,11 @@ void WaitForLastSubmittedFrame();
 FrameContext* WaitForNextFrameResources();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
+
 using namespace AgisX;
 
 
@@ -128,20 +133,18 @@ int main(int, char**)
 
     // Main loop
     bool done = false;
-    while (!done)
+    MSG msg;
+    memset((&msg), 0, (sizeof(msg)));
+    while (msg.message != 0x0012)
     {
         // Poll and handle messages (inputs, window resize, etc.)
         // See the WndProc() function below for our to dispatch events to the Win32 backend.
-        MSG msg;
-        while (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
+        if (::PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
         {
             ::TranslateMessage(&msg);
             ::DispatchMessage(&msg);
-            if (msg.message == WM_QUIT)
-                done = true;
+            continue;
         }
-        if (done)
-            break;
 
         // Start the Dear ImGui frame
         ImGui_ImplDX12_NewFrame();
@@ -151,8 +154,8 @@ int main(int, char**)
         instance.set_dockspace_id(dockspace_id);
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (instance.get_show_demo_window())
-            ImGui::ShowDemoWindow(&instance.get_show_demo_window());
+        //if (instance.get_show_demo_window())
+        //    ImGui::ShowDemoWindow(&instance.get_show_demo_window());
 
         ImGuiViewport* viewport = (ImGuiViewport*)(void*) ImGui::GetMainViewport();
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;
@@ -182,9 +185,9 @@ int main(int, char**)
         // Rendering
         ImGui::Render();
 
-        FrameContext* frameCtx = WaitForNextFrameResources();
+        FrameContext* frameCtxt = WaitForNextFrameResources();
         UINT backBufferIdx = g_pSwapChain->GetCurrentBackBufferIndex();
-        frameCtx->CommandAllocator->Reset();
+        frameCtxt->CommandAllocator->Reset();
 
         D3D12_RESOURCE_BARRIER barrier = {};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -193,14 +196,13 @@ int main(int, char**)
         barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        g_pd3dCommandList->Reset(frameCtx->CommandAllocator, nullptr);
-        g_pd3dCommandList->ResourceBarrier(1, &barrier);
 
-        // Render Dear ImGui graphics
-        const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
-        g_pd3dCommandList->ClearRenderTargetView(g_mainRenderTargetDescriptor[backBufferIdx], clear_color_with_alpha, 0, nullptr);
-        g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, nullptr);
+        g_pd3dCommandList->Reset(frameCtxt->CommandAllocator, NULL);
+        g_pd3dCommandList->ResourceBarrier(1, &barrier);
+        g_pd3dCommandList->ClearRenderTargetView(g_mainRenderTargetDescriptor[backBufferIdx], (float*)&clear_color, 0, NULL);
+        g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
         g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
+        ImGui::Render();
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), g_pd3dCommandList);
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -222,7 +224,7 @@ int main(int, char**)
         UINT64 fenceValue = g_fenceLastSignaledValue + 1;
         g_pd3dCommandQueue->Signal(g_fence, fenceValue);
         g_fenceLastSignaledValue = fenceValue;
-        frameCtx->FenceValue = fenceValue;
+        frameCtxt->FenceValue = fenceValue;
     }
 
     WaitForLastSubmittedFrame();
@@ -239,7 +241,31 @@ int main(int, char**)
     return 0;
 }
 
-// Helper functions
+void CleanupDeviceD3D()
+{
+    CleanupRenderTarget();
+    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
+    if (g_hSwapChainWaitableObject != NULL) { CloseHandle(g_hSwapChainWaitableObject); }
+    for (UINT i = 0; i < NUM_FRAMES_IN_FLIGHT; i++)
+        if (g_frameContext[i].CommandAllocator) { g_frameContext[i].CommandAllocator->Release(); g_frameContext[i].CommandAllocator = NULL; }
+    if (g_pd3dCommandQueue) { g_pd3dCommandQueue->Release(); g_pd3dCommandQueue = NULL; }
+    if (g_pd3dCommandList) { g_pd3dCommandList->Release(); g_pd3dCommandList = NULL; }
+    if (g_pd3dRtvDescHeap) { g_pd3dRtvDescHeap->Release(); g_pd3dRtvDescHeap = NULL; }
+    if (g_pd3dSrvDescHeap) { g_pd3dSrvDescHeap->Release(); g_pd3dSrvDescHeap = NULL; }
+    if (g_fence) { g_fence->Release(); g_fence = NULL; }
+    if (g_fenceEvent) { CloseHandle(g_fenceEvent); g_fenceEvent = NULL; }
+    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
+
+#ifdef DX12_ENABLE_DEBUG_LAYER
+    IDXGIDebug1* pDebug = NULL;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
+    {
+        pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+        pDebug->Release();
+    }
+#endif
+}
+
 bool CreateDeviceD3D(HWND hWnd)
 {
     // Setup swap chain
@@ -262,21 +288,21 @@ bool CreateDeviceD3D(HWND hWnd)
 
     // [DEBUG] Enable debug interface
 #ifdef DX12_ENABLE_DEBUG_LAYER
-    ID3D12Debug* pdx12Debug = nullptr;
+    ID3D12Debug* pdx12Debug = NULL;
     if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pdx12Debug))))
         pdx12Debug->EnableDebugLayer();
 #endif
 
     // Create device
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-    if (D3D12CreateDevice(nullptr, featureLevel, IID_PPV_ARGS(&g_pd3dDevice)) != S_OK)
+    if (D3D12CreateDevice(NULL, featureLevel, IID_PPV_ARGS(&g_pd3dDevice)) != S_OK)
         return false;
 
     // [DEBUG] Setup debug interface to break on any warnings/errors
 #ifdef DX12_ENABLE_DEBUG_LAYER
-    if (pdx12Debug != nullptr)
+    if (pdx12Debug != NULL)
     {
-        ID3D12InfoQueue* pInfoQueue = nullptr;
+        ID3D12InfoQueue* pInfoQueue = NULL;
         g_pd3dDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
         pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
         pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
@@ -326,25 +352,23 @@ bool CreateDeviceD3D(HWND hWnd)
         if (g_pd3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_frameContext[i].CommandAllocator)) != S_OK)
             return false;
 
-    if (g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_frameContext[0].CommandAllocator, nullptr, IID_PPV_ARGS(&g_pd3dCommandList)) != S_OK ||
+    if (g_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_frameContext[0].CommandAllocator, NULL, IID_PPV_ARGS(&g_pd3dCommandList)) != S_OK ||
         g_pd3dCommandList->Close() != S_OK)
         return false;
 
     if (g_pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&g_fence)) != S_OK)
         return false;
 
-    g_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (g_fenceEvent == nullptr)
+    g_fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (g_fenceEvent == NULL)
         return false;
 
     {
-        IDXGIFactory4* dxgiFactory = nullptr;
-        IDXGISwapChain1* swapChain1 = nullptr;
-        if (CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)) != S_OK)
-            return false;
-        if (dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, hWnd, &sd, nullptr, nullptr, &swapChain1) != S_OK)
-            return false;
-        if (swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain)) != S_OK)
+        IDXGIFactory4* dxgiFactory = NULL;
+        IDXGISwapChain1* swapChain1 = NULL;
+        if (CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)) != S_OK ||
+            dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, hWnd, &sd, NULL, NULL, &swapChain1) != S_OK ||
+            swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain)) != S_OK)
             return false;
         swapChain1->Release();
         dxgiFactory->Release();
@@ -354,31 +378,6 @@ bool CreateDeviceD3D(HWND hWnd)
 
     CreateRenderTarget();
     return true;
-}
-
-void CleanupDeviceD3D()
-{
-    CleanupRenderTarget();
-    if (g_pSwapChain) { g_pSwapChain->SetFullscreenState(false, nullptr); g_pSwapChain->Release(); g_pSwapChain = nullptr; }
-    if (g_hSwapChainWaitableObject != nullptr) { CloseHandle(g_hSwapChainWaitableObject); }
-    for (UINT i = 0; i < NUM_FRAMES_IN_FLIGHT; i++)
-        if (g_frameContext[i].CommandAllocator) { g_frameContext[i].CommandAllocator->Release(); g_frameContext[i].CommandAllocator = nullptr; }
-    if (g_pd3dCommandQueue) { g_pd3dCommandQueue->Release(); g_pd3dCommandQueue = nullptr; }
-    if (g_pd3dCommandList) { g_pd3dCommandList->Release(); g_pd3dCommandList = nullptr; }
-    if (g_pd3dRtvDescHeap) { g_pd3dRtvDescHeap->Release(); g_pd3dRtvDescHeap = nullptr; }
-    if (g_pd3dSrvDescHeap) { g_pd3dSrvDescHeap->Release(); g_pd3dSrvDescHeap = nullptr; }
-    if (g_fence) { g_fence->Release(); g_fence = nullptr; }
-    if (g_fenceEvent) { CloseHandle(g_fenceEvent); g_fenceEvent = nullptr; }
-    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = nullptr; }
-
-#ifdef DX12_ENABLE_DEBUG_LAYER
-    IDXGIDebug1* pDebug = nullptr;
-    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
-    {
-        pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
-        pDebug->Release();
-    }
-#endif
 }
 
 void CreateRenderTarget()
@@ -439,8 +438,32 @@ FrameContext* WaitForNextFrameResources()
     return frameCtx;
 }
 
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+void ResizeSwapChain(HWND hWnd, int width, int height)
+{
+    DXGI_SWAP_CHAIN_DESC1 sd;
+    g_pSwapChain->GetDesc1(&sd);
+    sd.Width = width;
+    sd.Height = height;
+
+    IDXGIFactory4* dxgiFactory = NULL;
+    g_pSwapChain->GetParent(IID_PPV_ARGS(&dxgiFactory));
+
+    g_pSwapChain->Release();
+    CloseHandle(g_hSwapChainWaitableObject);
+
+    IDXGISwapChain1* swapChain1 = NULL;
+    dxgiFactory->CreateSwapChainForHwnd(g_pd3dCommandQueue, hWnd, &sd, NULL, NULL, &swapChain1);
+    swapChain1->QueryInterface(IID_PPV_ARGS(&g_pSwapChain));
+    swapChain1->Release();
+    dxgiFactory->Release();
+
+    g_pSwapChain->SetMaximumFrameLatency(NUM_BACK_BUFFERS);
+
+    g_hSwapChainWaitableObject = g_pSwapChain->GetFrameLatencyWaitableObject();
+    assert(g_hSwapChainWaitableObject != NULL);
+}
+
 
 // Win32 message handler
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -458,16 +481,20 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
         {
             WaitForLastSubmittedFrame();
+            ImGui_ImplDX12_InvalidateDeviceObjects();
             CleanupRenderTarget();
-            HRESULT result = g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
-            assert(SUCCEEDED(result) && "Failed to resize swapchain.");
+            ResizeSwapChain(hWnd, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
             CreateRenderTarget();
+            ImGui_ImplDX12_CreateDeviceObjects();
         }
         return 0;
     case WM_SYSCOMMAND:
         if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
             return 0;
-        break;
+    case WM_CLOSE:
+        if (instance.agree_to_quit())
+            ::DestroyWindow(hWnd);
+        return 0;
     case WM_DESTROY:
         ::PostQuitMessage(0);
         return 0;

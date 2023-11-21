@@ -1,7 +1,7 @@
 #include "nged.h"
 #include "utils.h"
 #include "style.h"
-//#include "boxer/boxer.h"
+#include "boxer.h"
 #include "nfd.h"
 
 #include <nlohmann/json.hpp>
@@ -588,7 +588,7 @@ void NetworkView::addCommands(CommandManager* mgr)
     "Focus Selected ...",
     [](GraphView* view, StringView args) {
       auto* netview = static_cast<NetworkView*>(view);
-      netview->zoomToSelected(0.2);
+      netview->zoomToSelected(0.2f);
     },
     Shortcut{'F'},
     "network"}).setMayModifyGraph(false);
@@ -1077,6 +1077,15 @@ void NodeGraphEditor::initCommands()
     }
   }).setMayModifyGraph(false);
   mgr.add(new SimpleCommand{
+  "View/Exchanges",
+  "Open Exchange View",
+  [](GraphView* view, StringView args) {
+    if (auto exchange_view = view->editor()->addView(view->doc(), "Exchanges")) {
+        msghub::info("exchange view opened");
+    }
+  }
+  }).setMayModifyGraph(false);
+  mgr.add(new SimpleCommand{
     "View/Messages",
     "Open Messages View",
     [](GraphView* view, StringView args) {
@@ -1096,7 +1105,7 @@ void NodeGraphEditor::initCommands()
   }).setMayModifyGraph(false);
 
   // -------------- debug commands ----------------
-#ifdef DEBUG
+#ifdef _DEBUG
   mgr.add(new SimpleCommand{
     "Debug/TravelUp",
     "[Debug] Travel From Here",
@@ -1335,12 +1344,12 @@ bool NodeGraphEditor::closeView(ViewPtr view, bool needConfirm)
   if (ref == 1) { // only one view is referencing this doc
     auto doc     = view->doc();
     auto message = fmt::format("\"{}\" has unsaved edit, are you sure to close?", doc->title());
-    //if (
-    //  !doc->dirty() ||
-    //  needConfirm && boxer::show(message.c_str(), "Close View", boxer::Buttons::YesNo) ==
-    //                   boxer::Selection::Yes) {
-    //  confirmed = true;
-    //}
+    if (
+      !doc->dirty() ||
+      needConfirm && boxer::show(message.c_str(), "Close View", boxer::Buttons::YesNo) ==
+                       boxer::Selection::Yes) {
+      confirmed = true;
+    }
   }
   if (confirmed)
     removeView(view);
@@ -1370,8 +1379,8 @@ bool NodeGraphEditor::agreeToQuit() const
     }
     auto message =
       fmt::format("{} has unsaved edit, are you sure to close?", fmt::join(titles, ", "));
-    //if (boxer::show(message.c_str(), "Close View", boxer::Buttons::YesNo) != boxer::Selection::Yes)
-      //return false;
+    if (boxer::show(message.c_str(), "Close View", boxer::Buttons::YesNo) != boxer::Selection::Yes)
+      return false;
   }
   return true;
 }

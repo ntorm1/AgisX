@@ -142,13 +142,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="external\boxer\boxer_win.cpp" />
     <ClCompile Include="external\miniz\miniz.c" />
     <ClCompile Include="external\nfd\nfd_common.c" />
     <ClCompile Include="external\nfd\nfd_win.cpp" />
     <ClCompile Include="source\app\AppStyle.cpp" />
-    <ClCompile Include="source\app\AssetComp.cpp" />
     <ClCompile Include="source\app\EditorComp.cpp" />
-    <ClCompile Include="source\app\ExchangeComp.cpp" />
     <ClCompile Include="source\app\main.cpp" />
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="source\app\App.cpp" />
@@ -160,7 +159,25 @@
     <ClCompile Include="source\editor\nged_imgui.cpp" />
     <ClCompile Include="source\editor\nged_imgui_fonts.cpp" />
     <ClCompile Include="source\editor\nodes.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXAssetNode.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXExchangeNode.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXGraph.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXGraph.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXNode.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXNode.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXNodeFactory.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXNodeFactory.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXResponser.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXResponser.ixx" />
+    <ClCompile Include="source\editor\nodes\AgisXSerialize.cpp" />
     <ClCompile Include="source\editor\style.cpp" />
+    <ClCompile Include="source\editor\views\AgisXApp.cpp" />
+    <ClCompile Include="source\editor\views\AgisXApp.ixx" />
+    <ClCompile Include="source\editor\views\AgisXAppView.ixx" />
+    <ClCompile Include="source\editor\views\AgisXExchangeView.ixx" />
+    <ClCompile Include="source\editor\views\AgisXPrivate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgisCore.vcxproj">
@@ -168,6 +185,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\include\boxer.h" />
     <ClInclude Include="external\include\ImGuiFileDialog.h" />
     <ClInclude Include="external\include\ImGuiFileDialogConfig.h" />
     <ClInclude Include="external\include\miniz.h" />
@@ -188,24 +206,27 @@
     <ClInclude Include="external\nged\ngdoc.h" />
     <ClInclude Include="external\nged\style.h" />
     <ClInclude Include="external\nged\utils.h" />
+    <ClInclude Include="source\app\AgisXDeclare.h" />
     <ClInclude Include="source\app\AppStyle.h" />
-    <ClInclude Include="source\app\AssetComp.h" />
     <ClInclude Include="source\app\BaseComp.h" />
     <ClInclude Include="source\app\EditorComp.h" />
-    <ClInclude Include="source\app\ExchangeComp.h" />
     <ClInclude Include="source\app\Helpers.h" />
     <ClInclude Include="source\editor\editor.h" />
     <ClInclude Include="source\editor\gmath.h" />
     <ClInclude Include="source\editor\ngdoc.h" />
     <ClInclude Include="source\editor\nged.h" />
+    <ClInclude Include="source\editor\nged_declare.h" />
+    <ClInclude Include="source\editor\nged_graph_view.h" />
     <ClInclude Include="source\editor\nged_imgui.h" />
     <ClInclude Include="source\editor\nodes.h" />
+    <ClInclude Include="source\editor\nodes\AgisXSerialize.h" />
     <ClInclude Include="source\editor\res\fa_icondef.h" />
     <ClInclude Include="source\editor\res\fa_solid.hpp" />
     <ClInclude Include="source\editor\res\roboto_medium.hpp" />
     <ClInclude Include="source\editor\res\sourcecodepro.hpp" />
     <ClInclude Include="source\editor\style.h" />
     <ClInclude Include="source\editor\utils.h" />
+    <ClInclude Include="source\editor\views\AgisXPrivate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

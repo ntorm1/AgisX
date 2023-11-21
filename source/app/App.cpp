@@ -4,7 +4,6 @@
 #include "ImGuiFileDialog.h"
 
 #include "App.h"
-#include "ExchangeComp.h"
 #include "EditorComp.h"
 
 #include <rapidjson/allocators.h>
@@ -14,6 +13,8 @@ import SerializeModule;
 import AgisTimeUtils;
 
 import <filesystem>;
+
+using namespace Agis;
 
 namespace AgisX
 {
@@ -44,23 +45,20 @@ Application::Application()
     _env_dir = env_path.string();
 
     // init child components
-	exchange_comp = new ExchangeMapComp(*this);
     editor_comp = new EditorComp();
-    _comps.push_back(exchange_comp);
-
 }
 
 
 //============================================================================
 Application::~Application()
 {
-	delete exchange_comp;
+	delete editor_comp;
 }
 
 
 //============================================================================
 ExchangeMap const&
-Application::get_exchanges()
+Application::get_exchanges() const noexcept
 {
 	return _hydra->get_exchanges();
 }
@@ -73,6 +71,13 @@ void Application::set_dockspace_id(ImGuiID mainDockID_)
     editor_comp->set_dockspace_id(mainDockID_);
 }
 
+
+//============================================================================
+bool
+Application::agree_to_quit()
+{
+    return editor_comp->agree_to_quit();
+}
 
 //============================================================================
 void Application::render_app_state()
@@ -178,10 +183,21 @@ Application::step()
 	}
 
     auto lock = _hydra->__aquire_write_lock();
+    auto now = std::chrono::system_clock::now();
     auto res = _hydra->step();
+    auto end = std::chrono::system_clock::now();
 
     if (!res) return res;
-    
+    std::string timeMessage;
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - now);
+    if (elapsed.count() < 1000) {
+        timeMessage = "Hydra stepped successfully in " + std::to_string(elapsed.count()) + "us";
+    }
+    else {
+        auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+        timeMessage = "Hydra stepped successfully in " + std::to_string(elapsedMillis.count()) + "ms";
+    }
+    editor_comp->info(timeMessage);
     long long global_epoch = _hydra->get_global_time();
     long long next_epoch = _hydra->get_next_global_time();
     _app_state.update_time(global_epoch, next_epoch);
@@ -204,6 +220,14 @@ Application::build()
 }
 
 
+//============================================================================
+bool
+Application::exchange_exists(std::string const& name) const noexcept
+{
+    return _hydra->get_exchange(name).has_value();
+}
+
+
 
 //============================================================================
 void
@@ -223,24 +247,16 @@ Application::render()
         ImGui::EndPopup();
         return;
     }
-    ImGui::Begin("Application");
-
-    // render the app state
-	render_app_state();
-
-    // render the exchange map
-    exchange_comp->render();
-
     // render the node editor
     editor_comp->render();
-
-    ImGui::End();
 }
 
+
+//============================================================================
 void Application::init()
 {
     auto context = ImGui::GetCurrentContext();
-    editor_comp->init(context);
+    editor_comp->init(context, this);
 }
 
 
@@ -260,6 +276,10 @@ Application::emit_new_hydra_ptr()
     {
 		comp->on_hydra_restore();
 	}
+    for (auto& [view_name, view] : _views)
+    {
+        //view->on_hydra_restore();
+    }
 }
 
 
@@ -267,7 +287,6 @@ Application::emit_new_hydra_ptr()
 void
 Application::emit_step()
 {
-    exchange_comp->on_step();
 }
 
 
@@ -275,7 +294,6 @@ Application::emit_step()
 void
 Application::emit_reset()
 {
-    exchange_comp->on_reset();
 }
 
 

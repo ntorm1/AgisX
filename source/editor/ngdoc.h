@@ -2,17 +2,13 @@
 #define NGED_NGDOC_H
 //https://github.com/hugeproblem/nged/blob/main/ngdoc.h
 
-#include <phmap/phmap.h>
 #include <format>
-#include <nlohmann/json_fwd.hpp>
-#include <uuid.h>
 
 #include "utils.h"
-#include "gmath.h"
+
+#include "nged_declare.h"
 
 #include <shared_mutex>
-#include <vector>
-#include <string>
 #include <random>
 #include <memory>
 #include <deque>
@@ -21,27 +17,6 @@
 
 namespace nged 
 { 
-
-	using sint = intptr_t;
-    using uint = uintptr_t;
-    using Json = nlohmann::json;
-    using Vec2 = gmath::Vec2;
-    using Mat3 = gmath::Mat3;
-    using AABB = gmath::AABB;
-    using Color = gmath::sRGBColor;
-
-    template<class K, class V>
-	using HashMap = phmap::flat_hash_map<K, V>;
-
-    template<class K>
-	using HashSet = phmap::flat_hash_set<K>;
-	
-    template<class T>
-	using Vector = std::vector<T>;
-
-    using String = std::string;
-    using StringView = std::string_view; 
-
 	// ItemID & Connection {{{
 	class ItemID
 	{
@@ -140,30 +115,6 @@ struct std::hash<nged::OutputConnection>
 // }}}
 
 namespace nged {
-
-    class Graph;
-    class GraphItem;
-    class Node;
-    class Link;
-    class Router;
-    class ResizableBox;
-    class GroupBox;
-    class GraphItemFactory;
-    class NodeGraphDoc;
-    class Canvas;
-    class NodeFactory;
-
-    using GraphItemPtr = std::shared_ptr<GraphItem>;
-    using NodePtr = std::shared_ptr<Node>;
-    using LinkPtr = std::shared_ptr<Link>;
-    using RouterPtr = std::shared_ptr<Router>;
-    using GraphPtr = std::shared_ptr<Graph>;
-    using WeakGraphPtr = std::weak_ptr<Graph>;
-    using NodeGraphDocPtr = std::shared_ptr<NodeGraphDoc>;
-    using NodeFactoryPtr = std::shared_ptr<NodeFactory>;
-    using GraphItemFactoryPtr = std::shared_ptr<GraphItemFactory>;
-    using UID = uuids::uuid;
-
     // UID Related {{{
     UID generateUID();
 
@@ -320,7 +271,6 @@ namespace nged {
         AABB aabb_ = { {0, 0}, {0, 0} }; // local aabb
         Vec2 pos_ = { 0, 0 };           // position
 
-        void resetID(ItemID id) { id_ = id; }
 
         GraphItem(GraphItem const&) = delete;
         GraphItem(GraphItem&&) = delete;
@@ -328,6 +278,7 @@ namespace nged {
     public:
         GraphItem(Graph* parent);
         virtual ~GraphItem() = default;
+        void resetID(ItemID id) { id_ = id; }
 
         virtual bool serialize(nlohmann::json&) const;
         virtual bool deserialize(nlohmann::json const&);
@@ -841,37 +792,41 @@ namespace nged {
         }
         sint inputIndexOf(size_t nthNode, int nthInput) const
         {
+            auto nthInput_st = static_cast<size_t>(nthInput);
             auto const& irange = closures_[nthNode].inputs;
             auto        icnt = irange.end - irange.begin;
-            if (nthInput < 0)
-                nthInput += icnt;
-            if (nthInput < 0 || nthInput >= icnt)
+            if (nthInput_st < 0)
+                nthInput_st += icnt;
+            if (nthInput_st < 0 || nthInput_st >= icnt)
                 return -1;
-            return sint(inputs_[irange.begin + nthInput]);
+            return sint(inputs_[irange.begin + nthInput_st]);
         }
         Node* inputOf(size_t nthNode, int nthInput) const
         {
             auto idx = inputIndexOf(nthNode, nthInput);
-            if (idx < 0 || idx >= nodes_.size())
+            auto idx_size_t = static_cast<size_t>(idx);
+            if (idx_size_t < 0 || idx_size_t >= nodes_.size())
                 return nullptr;
-            return nodes_[idx].get();
+            return nodes_[idx_size_t].get();
         }
         sint outputIndexOf(size_t nthNode, int nthOutput) const
         {
             auto const& orange = closures_[nthNode].outputs;
             auto        ocnt = orange.end - orange.begin;
+            auto ocnt_int = static_cast<int>(ocnt);
             if (nthOutput < 0)
-                nthOutput += ocnt;
-            if (nthOutput < 0 || nthOutput >= ocnt)
+                nthOutput += ocnt_int;
+            if (nthOutput < 0 || nthOutput >= ocnt_int)
                 return -1;
             return sint(outputs_[orange.begin + nthOutput]);
         }
         Node* outputOf(size_t nthNode, int nthOutput) const
         {
             auto idx = outputIndexOf(nthNode, nthOutput);
-            if (idx < 0 || idx >= nodes_.size())
+            auto idx_size_t = static_cast<size_t>(idx);
+            if (idx_size_t < 0 || idx_size_t >= nodes_.size())
                 return nullptr;
-            return nodes_[idx].get();
+            return nodes_[idx_size_t].get();
         }
 
         class Accessor

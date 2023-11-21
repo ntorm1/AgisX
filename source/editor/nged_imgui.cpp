@@ -6,6 +6,8 @@
 #include "spdlog/spdlog.h"
 #include "res/fa_icondef.h"
 
+#include "../app/AgisXDeclare.h"
+
 #include <nlohmann/json.hpp>
 
 #include <imgui.h>
@@ -15,6 +17,13 @@
 #include <charconv>
 #include <limits>
 #include <memory>
+
+
+import AgisXApp;
+static AgisX::AppState app_state;
+
+import AgisXExchangeViewModule;
+import AgisXAppViewModule;
 
 // string format support {{{
 template<>
@@ -36,6 +45,11 @@ struct fmt::formatter<gmath::Vec2>
 // }}}
 
 namespace nged {
+
+AgisX::AppState& appState()
+{
+    return app_state;
+}
 
 using msghub = MessageHub;
 
@@ -247,19 +261,21 @@ static Vector<size_t> fuzzy_match_and_argsort(
   StringView                pattern,
   Vector<StringView> const& candidates)
 {
-  Vector<size_t>                 result;
-  Vector<std::pair<int, size_t>> matches;
-  for (size_t i = 0; i < candidates.size(); ++i) {
+    if (pattern.empty())
+        return utils::argsort(candidates);
+    Vector<size_t>                 result;
+    Vector<std::pair<int, size_t>> matches;
+    for (size_t i = 0; i < candidates.size(); ++i) {
     int score = 0;
     if (fuzzy_match(pattern, candidates[i], score)) {
-      matches.emplace_back(score, i);
+        matches.emplace_back(score, i);
     }
-  }
-  std::sort(matches.begin(), matches.end(), std::greater<>());
-  result.resize(matches.size());
-  std::transform(
+    }
+    std::sort(matches.begin(), matches.end(), std::greater<>());
+    result.resize(matches.size());
+    std::transform(
     matches.begin(), matches.end(), result.begin(), [](auto const& pair) { return pair.second; });
-  return result;
+    return result;
 }
 
 static Vector<StringView> fuzzy_match_and_sort(
@@ -721,7 +737,7 @@ void CommandManager::update(GraphView* view)
     if (ImGui::IsWindowAppearing())
       ImGui::SetKeyboardFocusHere(0);
     bool confirmed =
-      ImGui::InputText("##prompt", paletteInput_.data(), ImGuiInputTextFlags_EnterReturnsTrue);
+      ImGui::InputText("##prompt", &paletteInput_, ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::Separator();
     Vector<StringView> cmdDescList;
     Vector<CommandPtr> cmdList;
@@ -831,7 +847,7 @@ public:
   {
     if (ImGui::IsWindowAppearing())
       ImGui::SetKeyboardFocusHere(0);
-    auto recheck = ImGui::InputText("###Name", prompt_.data(), ImGuiInputTextFlags_AutoSelectAll);
+    auto recheck = ImGui::InputText("###Name", &prompt_, ImGuiInputTextFlags_AutoSelectAll);
     recheck |= ImGui::Checkbox("Fuzzy Match", &fuzzy_);
     if (prompt_.empty()) return true;
     if (!view) return false;
@@ -1035,7 +1051,7 @@ public:
 };
 // }}} NetworkView
 
-// Inspector View {{{
+//============================================================================s
 class ImGuiInspectorView : public ImGuiGraphView<ImGuiInspectorView, InspectorView>
 {
 public:
@@ -1095,9 +1111,8 @@ public:
     }
   }
 };
-// }}} Inspector View
 
-// Message View {{{
+//============================================================================
 class ImGuiMessageView: public ImGuiGraphView<ImGuiMessageView, GraphView>
 {
   String tabToOpen_ = "";
@@ -1129,13 +1144,13 @@ public:
         auto& textColor = ImGui::GetStyle().Colors[ImGuiCol_Text];
         // log verbosity -> color
         static const ImVec4 colorMap[] = {
-          {0.5,0.5,0.5,1.0}, // Trace
-          {0.0,0.5,0.1,1.0}, // Debug
-          {1.0,1.0,1.0,1.0}, // Info
-          {1.0,0.5,0.1,1.0}, // Warn
-          {1.0,0.0,0.0,1.0}, // Error
-          {0.6,0.0,0.0,1.0}, // Fatal
-          {1.0,1.0,1.0,1.0}, // Text
+            {0.5f, 0.5f, 0.5f, 1.0f}, // Trace
+            {0.0f, 0.5f, 0.1f, 1.0f}, // Debug
+            {1.0f, 1.0f, 1.0f, 1.0f}, // Info
+            {1.0f, 0.5f, 0.1f, 1.0f}, // Warn
+            {1.0f, 0.0f, 0.0f, 1.0f}, // Error
+            {0.6f, 0.0f, 0.0f, 1.0f}, // Fatal
+            {1.0f, 1.0f, 1.0f, 1.0f}, // Text
         };
         static_assert(sizeof(colorMap)/sizeof(*colorMap) == static_cast<int>(MessageHub::Verbosity::Count),
             "color map missmatch with verbosity count");
@@ -1170,9 +1185,10 @@ public:
     }
   }
 };
-// }}} Message View
 
-// Help View {{{
+
+
+//============================================================================
 class ImGuiHelpView : public ImGuiGraphView<ImGuiHelpView, GraphView>
 {
 public:
@@ -1190,7 +1206,7 @@ public:
     auto* title = "NGED - a Node Graph EDitor";
     auto  fontsize = 20.f * dpiScale();
     auto  textsize = font->CalcTextSizeA(fontsize, FLT_MAX, 0.f, title);
-    auto  textpos = ImVec2((windowsize / 2).x, fontsize * 1.5) - textsize / 2;
+    auto  textpos = ImVec2((windowsize / 2.0f).x, fontsize * 1.5) - textsize / 2;
     drawlist->AddText(font, fontsize, textpos + ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin(), 0xffffffff, title);
     ImGui::SetCursorPos(ImVec2(8, textpos.y + fontsize * 4));
     //ImGui::Separator();
@@ -1238,42 +1254,49 @@ public:
 // Default Views {{{
 class SimpleViewFactory : public ViewFactory
 {
-  HashMap<String, GraphViewPtr (*)(NodeGraphEditor*, NodeGraphDocPtr)> factories_;
-  SimpleViewFactory(SimpleViewFactory const&) = delete;
-
+    HashMap<String, GraphViewPtr (*)(AgisX::AppState& _instance, NodeGraphEditor*, NodeGraphDocPtr)> factories_;
+    SimpleViewFactory(SimpleViewFactory const&) = delete;
+    
 public:
-  SimpleViewFactory() = default;
+    SimpleViewFactory() {}
 
-  void add(String const& kind, GraphViewPtr (*factory)(NodeGraphEditor*, NodeGraphDocPtr))
-  {
+    void add(String const& kind, GraphViewPtr (*factory)(AgisX::AppState& _instance,NodeGraphEditor*, NodeGraphDocPtr))
+    {
     factories_[kind] = factory;
-  }
-  GraphViewPtr createView(String const& kind, NodeGraphEditor* editor, NodeGraphDocPtr doc) const override
-  {
+    }
+    GraphViewPtr createView(String const& kind, NodeGraphEditor* editor, NodeGraphDocPtr doc) const override
+    {
     if (auto itr = factories_.find(kind); itr != factories_.end()) {
-      if (auto viewptr = itr->second(editor, doc)) {
-        ViewFactory::finalize(viewptr.get(), kind, editor);
-        return viewptr;
-      }
+        if (auto viewptr = itr->second(app_state,editor, doc)) {
+            app_state.add_view(kind,viewptr);
+            ViewFactory::finalize(viewptr.get(), kind, editor);
+            return viewptr;
+        }
     }
     return nullptr;
-  }
+    }
 };
 
 ViewFactoryPtr defaultViewFactory()
 {
   auto factory = std::make_shared<SimpleViewFactory>();
-  factory->add("network", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("network", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiNetworkView>(editor, doc);
   });
-  factory->add("inspector", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("inspector", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiInspectorView>(editor);
   });
-  factory->add("message", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("message", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiMessageView>(editor);
   });
-  factory->add("help", [](NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+  factory->add("help", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
     return std::make_shared<ImGuiHelpView>(editor);
+  });
+  factory->add("Exchanges", [](AgisX::AppState& _app_state,NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXExchangeView>(_app_state,editor);
+  });
+  factory->add("AppState", [](AgisX::AppState& _app_state, NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXAppView>(_app_state, editor);
   });
   return factory;
 }

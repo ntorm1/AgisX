@@ -30,7 +30,7 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
   } else if (state == GraphItemState::HOVERED) {
     highlight = true;
     hlcolor   = color_;
-    hlcolor.a *= 0.5;
+    hlcolor.a = static_cast<uint8_t>(hlcolor.a * 0.5);
   } else if (state == GraphItemState::DESELECTED) {
     highlight = true;
     // auto hsv = toHSV(toLinear(color_));
@@ -49,7 +49,7 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
     localbb.max /= canvas->viewScale() / limit;
     auto scaledbox = localbb.moved(pos());
     auto c         = color_;
-    c.a *= 0.66f;
+    c.a = static_cast<uint8_t>(c.a * 0.66f);
     style.fillColor = toUint32RGBA(c);
     canvas->drawRect(scaledbox.min, scaledbox.max, 0, style);
   } else {
@@ -237,8 +237,8 @@ void Arrow::draw(Canvas* canvas, GraphItemState state) const
     return;
 
   Vec2 line[] = {start(), end()};
-  Mat3 rleft = Mat3::fromSRT({1,1}, gmath::pi/6, end());
-  Mat3 rright = Mat3::fromSRT({1,1}, gmath::pi/-6, end());
+  Mat3 rleft = Mat3::fromSRT({1,1}, static_cast<float>(gmath::pi/6), end());
+  Mat3 rright = Mat3::fromSRT({1,1}, static_cast<float>(gmath::pi/-6), end());
   Vec2 d = (start_ - end_) * 0.25f;
   if (length2(d) > tipSize_*tipSize_)
     d = normalize(d) * tipSize_;

@@ -1,5 +1,6 @@
 #pragma once
 #include "AgisDeclare.h"
+#include "AgisXDeclare.h"
 #include "BaseComp.h"
 
 import HydraModule;
@@ -11,6 +12,7 @@ import <memory>;
 import <vector>;
 import <expected>;
 import <shared_mutex>;
+import <unordered_map>;
 
 #include "imgui.h"
 
@@ -18,7 +20,6 @@ import <shared_mutex>;
 #define WRITE_LOCK auto lock = std::unique_lock(_mutex);
 #define READ_LOCK auto lock = std::shared_lock(_mutex);
 
-using namespace Agis;
 
 namespace AgisX 
 {
@@ -52,17 +53,21 @@ public:
 	~Application();
 
 	std::string const & get_env_name() const { return env_name; }
-	Hydra* get_hydra() { return _hydra.get(); }
-	ExchangeMap const& get_exchanges();
+	Agis::Hydra* get_hydra() { return _hydra.get(); }
+	Agis::ExchangeMap const& get_exchanges() const noexcept;
 	bool& get_show_demo_window() { return show_demo_window; }
 	void set_dockspace_id(ImGuiID mainDockID_);
 	
+	bool agree_to_quit();
 	void render_app_state();
 	void render();
 	void init();
 	void reset();
-	std::expected<bool, AgisException> step();
-	std::expected<bool, AgisException> build();
+	std::expected<bool, Agis::AgisException> step();
+	std::expected<bool, Agis::AgisException> build();
+	void add_view(std::string const& name, nged::GraphViewPtr view){ _views[name] = view; }
+
+	bool exchange_exists(std::string const& name) const noexcept;
 
 	float TEXT_BASE_HEIGHT = 0.0f;
 	float TEXT_BASE_WIDTH = 0.0f;
@@ -73,17 +78,18 @@ private:
 	void emit_step();
 	void emit_reset();
 
+	std::unordered_map<std::string, nged::GraphViewPtr> _views;
 	std::vector<BaseComp*> _comps;
-	std::optional<AgisException> _exception;
+
+	std::optional<Agis::AgisException> _exception;
 	bool show_demo_window = true;
 	
-	ExchangeMapComp* exchange_comp = nullptr;
 	EditorComp* editor_comp = nullptr;
 	ApplicationState _app_state;
 
 	std::string env_name = "default";
 	std::string _env_dir = "";
-	std::unique_ptr<Hydra> _hydra;
+	std::unique_ptr<Agis::Hydra> _hydra;
 };
 
 static Application instance;
