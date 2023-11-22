@@ -28,6 +28,12 @@ public:
 	void __build() noexcept;
 	void __step() noexcept;
 	void __reset() noexcept;
+	void __create_exchange(
+		std::string const& id,
+		std::string const& dt_format,
+		std::string const& source
+	) noexcept;
+
 	void add_view(std::string const& name, nged::GraphViewPtr view) { WRITE_LOCK _views[name] = view; }
 	//void update_time(long long global_time, long long next_global_time);
 

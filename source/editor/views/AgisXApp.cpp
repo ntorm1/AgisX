@@ -200,6 +200,19 @@ AppState::__reset() noexcept
 
 
 //============================================================================
+void AppState::__create_exchange(std::string const& id, std::string const& dt_format, std::string const& source) noexcept
+{
+    nged::MessageHub::infof("creating exchange: {}", id);
+    auto res = _hydra->create_exchange(id, dt_format, source);
+    if (!res) {
+        nged::MessageHub::errorf("failed to create exchange: {}", res.error().what());
+        return;
+    }
+    nged::MessageHub::infof("created exchange: {}", id);
+}
+
+
+//============================================================================
 void
 AppState::emit_on_hydra_restore()
 {
