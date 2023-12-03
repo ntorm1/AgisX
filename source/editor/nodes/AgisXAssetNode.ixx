@@ -47,7 +47,7 @@ public:
 
 	void render_inspector() noexcept override;
 	virtual bool serialize(nged::Json& json) const override;
-	virtual bool deserialize(nged::Json const& json) override;
+	bool deserialize(nged::Json const& json) override;
 
 
 private:

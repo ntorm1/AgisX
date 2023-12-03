@@ -33,7 +33,8 @@ protected:
 public:
 	AgisXNode(nged::Graph* parent, nged::StringView type, nged::StringView name, int num_inputs);
 	virtual ~AgisXNode() = default;
-	virtual bool serialize(nged::Json& json) const override;
+	virtual bool serialize(nged::Json& json) const override = 0;
+	virtual bool deserialize(nged::Json const& json) override = 0;
 	virtual bool getIcon(nged::IconType& iconType, nged::StringView& iconData) const override;
 	virtual void render_inspector() noexcept = 0;
 	virtual void on_render_deactivate() noexcept {};
@@ -44,15 +45,6 @@ public:
 	void setDirty(bool dirty) { _dirty = dirty; }
 	bool editable() const { return _editable; }
 	virtual nged::sint numMaxInputs() const override { return _intputs; }
-};
-
-
-export class AgisXAllocationNode : public AgisXNode
-{
-public:
-	template<typename... Args>
-	AgisXAllocationNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
-	virtual void render_inspector() noexcept override {}
 };
 
 

@@ -1008,6 +1008,7 @@ namespace nged {
         GraphItemPool(GraphItemPool const&) = delete;
 
     public:
+        void setSeed(unsigned int seed) { randGenerator_.seed(seed); }
         ~GraphItemPool() = default;
         GraphItemPool() : randGenerator_(std::random_device()()) {}
 
@@ -1027,20 +1028,14 @@ namespace nged {
                 iid = { uint32_t(randGenerator_()), uint32_t(id) };
             }
             if (uidMap_.find(item->uid()) != uidMap_.end())
+            {
+                String uuid_string = uidToString(item->uid());
                 throw std::runtime_error("got duplicated uid");
+            }
             uidMap_[item->uid()] = iid;
             return iid;
         }
-        void release(ItemID id)
-        {
-            auto index = id.index();
-            assert(index < items_.size() && items_[index]);
-            auto item = items_[index];
-            assert(item->id() == id);
-            uidMap_.erase(item->uid());
-            freeList_.push_back(index);
-            items_[index] = nullptr;
-        }
+        void release(ItemID id);
         GraphItemPtr get(ItemID id)
         {
             auto index = id.index();
@@ -1159,6 +1154,7 @@ namespace nged {
     ///               can be saved to / loaded from disk.
     class NodeGraphDoc : public std::enable_shared_from_this<NodeGraphDoc>
     {
+        friend class Graph;
         GraphItemPool       pool_;
         NodeGraphDocHistory history_;
         String              savePath_ = "";

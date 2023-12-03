@@ -6,6 +6,8 @@ module;
 
 #include "AgisAST.h"
 
+import AssetNode;
+
 module AgisXAssetNodeMod;
 import AgisXApp;
 import AgisXExchangeNodeMod;
@@ -102,6 +104,13 @@ void AgisXAssetReadNode::render_inspector() noexcept
 //==================================================================================================
 void AgisXAssetOpNode::render_inspector() noexcept
 {
+	ImGui::Text("Opp Type: ");
+	for(auto& [opp_str, opp] : Agis::AST::AssetLambdaNode::AgisOperatorMap()) {
+		if (ImGui::RadioButton(opp_str.c_str(), _opp == opp)) {
+			_opp = opp;
+			setDirty(true);
+		}
+	}
 }
 
 

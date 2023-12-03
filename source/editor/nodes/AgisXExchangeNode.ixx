@@ -43,6 +43,8 @@ public:
 
 	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	virtual void render_inspector() noexcept override {}
+	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
+	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
 };
 
 }

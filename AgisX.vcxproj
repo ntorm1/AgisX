@@ -172,6 +172,7 @@
     <ClCompile Include="source\editor\nodes\AgisXResponser.cpp" />
     <ClCompile Include="source\editor\nodes\AgisXResponser.ixx" />
     <ClCompile Include="source\editor\nodes\AgisXSerialize.cpp" />
+    <ClCompile Include="source\editor\nodes\AgisXStrategyNode.ixx" />
     <ClCompile Include="source\editor\style.cpp" />
     <ClCompile Include="source\editor\views\AgisXApp.cpp" />
     <ClCompile Include="source\editor\views\AgisXApp.ixx" />

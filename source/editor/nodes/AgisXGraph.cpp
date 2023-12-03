@@ -6,6 +6,7 @@ module;
 module AgisXGraph;
 
 import AgisXNode;
+import AgisXStrategyNodeMod;
 
 using namespace nged;
 
@@ -15,7 +16,10 @@ namespace AgisX
 AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
     : Graph(root, parent, name)
 {
-    auto outputNode = std::make_shared<AgisXAllocationNode>(this, "AllocationNode", "Allocation", 0);
+    auto outputNode = std::make_shared<AgisXStrategyNode>(
+        this,"StrategyNode", "Strategy", 0
+    );
+    root->setDeserializeInplace(false);
     outputNodeID_ = docRoot()->addItem(outputNode);
     outputNode->resetID(outputNodeID_);
     items_.insert(outputNodeID_);
@@ -28,29 +32,15 @@ std::shared_ptr<AgisXNode> AgisXGraph::outputNode() const
 	return std::static_pointer_cast<AgisXNode>(get(outputNodeID_)); 
 }
 
-//==================================================================================================
-bool AgisXGraph::deserialize(Json const& json)
-{
-    deserializing_ = true;
-    auto succeed = Graph::deserialize(json);
-    for (auto id : items_) {
-        if (auto* node = get(id)->asNode()) {
-            //static_cast<AgisXNode*>(node)->settle();
-        }
-    }
-    deserializing_ = false;
-    return succeed;
-}
-
 
 //==================================================================================================
 void AgisXGraph::clear()
 {
     for (auto id : items_)
-        if (id != outputNodeID_)
+        //if (id != outputNodeID_)
             docRoot()->removeItem(id);
     items_.clear();
-    items_.insert(outputNodeID_);
+    //items_.insert(outputNodeID_);
     links_.clear();
     linkIDs_.clear();
 }

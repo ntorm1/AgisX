@@ -1208,13 +1208,14 @@ namespace nged {
     bool Graph::deserialize(Json const& json)
     {
         auto doc = docRoot();
-
         HashMap<UID, ItemID>    uidmap;    // uid to id
         HashMap<size_t, ItemID> idmap;     // old id to new id
         HashMap<UID, ItemID>    uidoldmap; // uid to old id
         for (auto&& itemdata : json["items"])
             if (itemdata.contains("uid"))
+            {
                 uidoldmap[uidFromString(String(itemdata["uid"]))] = ItemID(itemdata["id"].get<size_t>());
+            }
         HashSet<ItemID> redundantItems;
         for (auto id : items()) {
             auto item = get(id);
@@ -1226,8 +1227,11 @@ namespace nged {
             }
         }
         remove(redundantItems);
+        auto json_count = json["items"].size();
         for (auto&& itemdata : json["items"]) {
-            auto uid = itemdata.contains("uid") ? uidFromString(String(itemdata["uid"])) : UID();
+            String type = itemdata["type"];
+//            auto uid = itemdata.contains("uid") ? uidFromString(String(itemdata["uid"])) : UID();
+            auto uid = UID();
             if (auto itr = uidmap.find(uid); itr != uidmap.end()) {
                 if (!get(itr->second)->deserialize(itemdata)) {
                     msghub::errorf("failed to import item {}", itemdata.dump(2));
@@ -1235,10 +1239,14 @@ namespace nged {
                 }
             }
             else {
+                if (type == "StrategyNode")
+                {
+                    continue;
+                }
                 String       factory = itemdata["f"];
                 GraphItemPtr newitem;
                 if (factory.empty() || factory == "node") {
-                    String type = itemdata["type"];
+                    
                     newitem = nodeFactory()->createNode(this, type);
                 }
                 else {
@@ -1942,5 +1950,17 @@ namespace nged {
         return size;
     }
     // }}} Canvas
+
+    void GraphItemPool::release(ItemID id)
+    {
+        auto index = id.index();
+        assert(index < items_.size() && items_[index]);
+        auto item = items_[index];
+        assert(item->id() == id);
+        uidMap_.erase(item->uid());
+        freeList_.push_back(index);
+        items_[index] = nullptr;
+    }
+ 
 
 } // namespace nged

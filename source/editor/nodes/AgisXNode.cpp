@@ -93,6 +93,10 @@ AgisXNode::getIcon(nged::IconType& iconType, nged::StringView& iconData) const
 		iconType = IconType::IconFont;
 		iconData = ICON_FA_TABLE;
 	}
+	else if (type() == "StrategyNode") {
+		iconType = IconType::IconFont;
+		iconData = ICON_FA_COGS;
+	}
 	else {
 		iconData = type();
 	}
