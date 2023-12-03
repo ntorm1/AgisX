@@ -23,6 +23,7 @@ import AgisXApp;
 static AgisX::AppState app_state;
 
 import AgisXExchangeViewModule;
+import AgisXPortfolioViewModule;
 import AgisXAppViewModule;
 
 // string format support {{{
@@ -1298,6 +1299,9 @@ ViewFactoryPtr defaultViewFactory()
   factory->add("AppState", [](AgisX::AppState& _app_state, NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
       return std::make_shared<AgisX::AgisXAppView>(_app_state, editor);
   });
+  factory->add("Portfolios", [](AgisX::AppState& _app_state, NodeGraphEditor* editor, NodeGraphDocPtr doc) -> GraphViewPtr {
+      return std::make_shared<AgisX::AgisXPortfolioView>(_app_state, editor);
+      });
   return factory;
 }
 // }}} Default Views

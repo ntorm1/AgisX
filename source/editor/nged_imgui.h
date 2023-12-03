@@ -91,6 +91,7 @@ protected:
 
 
 public:
+  
   template<class... T>
   ImGuiGraphView(T&&... arg) : Base(std::forward<T>(arg)...)
   {}
@@ -182,6 +183,7 @@ class ImGuiNodeGraphEditor : public NodeGraphEditor
   String  defaultLayoutDesc_=R"(vsplit:
   hsplit:7
     AppState:3:hide_tab_bar
+        Portfolios:3:hide_tab_bar
     Exchanges:5
     network:5
     inspector:3:hide_tab_bar

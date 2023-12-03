@@ -71,11 +71,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\debug\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\debug\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64;$(oneTBBLibDir)\vc_mt;</LibraryPath>
     <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include;$(SolutionDir)AgisX\external</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64</LibraryPath>
+    <LibraryPath>C:\dev\vcpkg\installed\x64-windows-static\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(LibraryPath);$(DXSDK_DIR)Lib\x64;$(oneTBBLibDir)\vc_mt;</LibraryPath>
     <IncludePath>$(SolutionDir)AgisX\external\include;$(IncludePath);$(SolutionDir)\include;$(SolutionDir)AgisX\external</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -177,7 +177,9 @@
     <ClCompile Include="source\editor\views\AgisXApp.ixx" />
     <ClCompile Include="source\editor\views\AgisXAppView.ixx" />
     <ClCompile Include="source\editor\views\AgisXExchangeView.ixx" />
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.ixx" />
     <ClCompile Include="source\editor\views\AgisXPrivate.cpp" />
+    <ClCompile Include="source\editor\views\AgisXPrivatePortfolio.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgisCore.vcxproj">
@@ -227,6 +229,7 @@
     <ClInclude Include="source\editor\style.h" />
     <ClInclude Include="source\editor\utils.h" />
     <ClInclude Include="source\editor\views\AgisXPrivate.h" />
+    <ClInclude Include="source\editor\views\AgisXPrivatePortfolio.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -29,6 +29,7 @@ AgisXExchangeViewPrivate::~AgisXExchangeViewPrivate()
 std::optional<AgisXAssetViewPrivate*>
 AgisXExchangeViewPrivate::get_asset_view() const noexcept
 {
+    auto lock = std::shared_lock(_mutex);
 	if (!asset_view) return std::nullopt;
 	return (*asset_view).get();
 }
@@ -38,7 +39,7 @@ AgisXExchangeViewPrivate::get_asset_view() const noexcept
 bool
 AgisXExchangeViewPrivate::set_selected_asset(std::string const& asset_id)
 {
-	auto lock = std::shared_lock(_mutex);
+	auto lock = std::unique_lock(_mutex);
 	if(!selected_exchange) return false;
 	auto asset = (*selected_exchange)->get_asset(asset_id);
 	if (!asset) return false;
@@ -50,7 +51,7 @@ AgisXExchangeViewPrivate::set_selected_asset(std::string const& asset_id)
 void
 AgisXExchangeViewPrivate::set_selected_exchange(std::optional<Agis::Exchange const*> exchange)
 {
-	auto lock = std::shared_lock(_mutex);
+	auto lock = std::unique_lock(_mutex);
 	selected_exchange = exchange;
 	asset_view = std::nullopt;
 	this->asset_ids.clear();
@@ -256,5 +257,7 @@ AgisXPlotViewPrivate::reset()
 {
     _data.clear();
 }
+
+
 
 }

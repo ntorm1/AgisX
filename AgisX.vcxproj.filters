@@ -126,6 +126,12 @@
     <ClCompile Include="source\editor\views\AgisXPrivate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPrivatePortfolio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\app\BaseComp.h">
@@ -252,6 +258,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\editor\views\AgisXPrivate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\views\AgisXPrivatePortfolio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

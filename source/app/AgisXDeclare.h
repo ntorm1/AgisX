@@ -13,5 +13,5 @@ namespace AgisX
 	class BaseComp;
 	class AgisXExchangeViewPrivate;
 	class AgisXExchangeView;
-
+	class AgisXPortfolioView;
 }

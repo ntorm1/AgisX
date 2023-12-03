@@ -4,7 +4,7 @@ module;
 #include <rapidjson/document.h>
 #include <string>
 #include "../ngdoc.h"
-
+#include "AgisMacros.h"
 module AgisXApp;
 
 import <filesystem>;
@@ -12,6 +12,7 @@ import <filesystem>;
 import SerializeModule;
 import HydraModule;
 import ExchangeMapModule;
+import ASTStrategyModule;
 import AgisTimeUtils;
 
 using namespace Agis;
@@ -84,6 +85,20 @@ AppState::~AppState()
 
 
 //============================================================================
+std::optional<Agis::Portfolio*>
+AppState::get_portfolio_mut(std::string const& id) const noexcept
+{
+    return _hydra->get_portfolio_mut(id);
+}
+
+//============================================================================
+std::optional<Agis::Portfolio const*>
+AppState::get_portfolio(std::string const& id) const noexcept
+{
+   return _hydra->get_portfolio(id);
+}
+
+//============================================================================
 std::optional<Agis::Exchange const*>
 AppState::get_exchange(std::string const& id) const noexcept
 {
@@ -113,6 +128,9 @@ AppState::__save_state() const noexcept
     if (!res) {
         nged::MessageHub::errorf("failed to save state: {}",res.error().what());
     }
+    else {
+		nged::MessageHub::infof("saved state to: {}", output_path);
+    }
 }
 
 
@@ -126,6 +144,7 @@ AppState::__load_state() noexcept
         auto res = deserialize_hydra(_env_dir + "/hydra.json");
         if (res)
         {
+            emit_lock(true);
             _hydra = std::move(res.value());
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
@@ -145,7 +164,6 @@ AppState::__load_state() noexcept
 void
 AppState::__build() noexcept
 {
-    auto lock = _hydra->__aquire_write_lock();
     std::thread build_thread([this] {
         nged::MessageHub::info("building hydra");
         if (_hydra->get_state() != HydraState::INIT)
@@ -196,19 +214,105 @@ AppState::__step() noexcept
 void
 AppState::__reset() noexcept
 {
+    auto res = _hydra->reset();
+    if (!res)
+    {
+        nged::MessageHub::errorf("failed to reset hydra: {}", res.error().what());
+        return;
+    }
+	update_time(0, _hydra->get_next_global_time());
 }
 
 
 //============================================================================
-void AppState::__create_exchange(std::string const& id, std::string const& dt_format, std::string const& source) noexcept
+void
+AppState::__create_strategy(
+    std::string const& strategy_id,
+    std::string const& portfolio_id,
+    std::string const& exchange_id,
+    double cash)
+{
+    auto exchange_opt  = _hydra->get_exchange_mut(exchange_id);
+    auto portfolio_opt = _hydra->get_portfolio_mut(portfolio_id);
+    if (!exchange_opt)
+	{
+		nged::MessageHub::errorf("failed to create strategy: exchange {} does not exist", exchange_id);
+		return;
+	}
+    if (!portfolio_opt)
+	{
+        nged::MessageHub::errorf("failed to create strategy: portfolio {} does not exist", portfolio_id);
+		return;
+    }
+    auto strategy = std::make_unique<ASTStrategy>(
+        strategy_id,
+        cash,
+        *exchange_opt.value(),
+        *portfolio_opt.value()
+    );
+    auto res = _hydra->register_strategy(std::move(strategy));
+    if (!res) 
+    {
+        nged::MessageHub::errorf("failed to create strategy: {}", res.error().what());
+    }
+    else
+    {
+        nged::MessageHub::infof("created strategy: {}", strategy_id);
+    }
+}
+
+
+//============================================================================
+void AppState::__create_exchange(
+    std::string const& id,
+    std::string const& dt_format,
+    std::string const& source,
+    std::string const& symbols
+) noexcept
 {
     nged::MessageHub::infof("creating exchange: {}", id);
-    auto res = _hydra->create_exchange(id, dt_format, source);
+
+    std::optional<std::vector<std::string>> symbol_list;
+    if (!symbols.empty())
+	{
+        symbol_list = std::vector<std::string>();
+		// split symbols by comma and store in symbol_list
+        std::istringstream ss(symbols);
+        std::string token;
+        while (std::getline(ss, token, ',')) {
+            (*symbol_list).push_back(token);
+        }
+	}
+
+    auto res = _hydra->create_exchange(id, dt_format, source, symbol_list);
     if (!res) {
         nged::MessageHub::errorf("failed to create exchange: {}", res.error().what());
         return;
     }
     nged::MessageHub::infof("created exchange: {}", id);
+}
+
+
+//============================================================================
+void
+AppState::__create_portfolio(
+    std::string const& id,
+    std::string const& exchange_id,
+    std::optional<Agis::Portfolio*> parent
+) noexcept
+{
+    if (_hydra->get_state() != HydraState::BUILT)
+    {
+        nged::MessageHub::error("Hydra is not built");
+		return;
+    }
+    nged::MessageHub::infof("creating portfolio: {}", id);
+    auto res = _hydra->create_portfolio(id, exchange_id, parent);
+    if (!res) {
+        nged::MessageHub::errorf("failed to create portfolio: {}", res.error().what());
+        return;
+    }
+	nged::MessageHub::infof("created portfolio: {}", id);
 }
 
 
@@ -221,6 +325,18 @@ AppState::emit_on_hydra_restore()
         nged::MessageHub::debugf("emitting on_hydra_restore for {}", type);
         view->on_hydra_restore();
         nged::MessageHub::debugf("on_hydra_restore complete for {}", type);
+    }
+}
+
+
+//============================================================================
+void
+AppState::emit_lock(bool lock)
+{
+    for (auto& [type, view] : _views)
+    {
+        if(lock) view->write_lock();
+		else view->write_unlock();
     }
 }
 

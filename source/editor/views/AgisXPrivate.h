@@ -49,6 +49,8 @@ struct AgisXAssetViewPrivate
 };
 
 
+
+
 //============================================================================
 class AgisXExchangeViewPrivate
 {

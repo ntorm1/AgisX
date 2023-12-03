@@ -26,8 +26,11 @@ public:
     }
     void onDocModified() override {}
     void onGraphModified() override {}
-    void on_hydra_restore() override {}
-    
+    void on_hydra_restore() override 
+    {
+        write_unlock();
+    }
+
     void drawContent() 
     {
         if (ImGui::CollapsingHeader("State IO"))
@@ -65,7 +68,6 @@ public:
 
 private:
     AgisX::AppState& _app_state;
-    mutable std::shared_mutex _mutex;
 };
 
 

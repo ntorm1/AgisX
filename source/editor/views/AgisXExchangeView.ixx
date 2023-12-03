@@ -24,7 +24,6 @@ export class AgisXExchangeView
 private:
     AgisX::AppState& _app_state;
     AgisX::AgisXExchangeViewPrivate _p;
-    mutable std::shared_mutex _mutex;
     Agis::ExchangeMap const* _exchanges = nullptr;
     std::unordered_map<std::string, size_t> const* _exchange_ids = nullptr;
 
@@ -36,6 +35,7 @@ public:
         nged::NodeGraphEditor* editor
     ) : ImGuiGraphView(editor, nullptr), _app_state(app_state)
     {
+        _exchange_ids = _app_state.get_exchange_ids();
         setTitle("Exchanges");
     }
     void onDocModified() override {}
@@ -44,9 +44,10 @@ public:
     //============================================================================
     void on_hydra_restore() override
     {
-        auto lock = std::unique_lock(_mutex);
+        // unique lock on mutex already aquired by AppState
         _exchange_ids = _app_state.get_exchange_ids();
         _p.set_selected_exchange(std::nullopt);
+        write_unlock();
     }
 
     //============================================================================
@@ -95,8 +96,10 @@ public:
                 ImGui::EndListBox();
             }
             auto selected_asset_opt = _p.get_asset_view();
-            if (!selected_asset_opt) return;
-            (*selected_asset_opt)->draw();
+            if (selected_asset_opt)
+            {
+                (*selected_asset_opt)->draw();
+            }
         }
     }
 
@@ -104,6 +107,7 @@ public:
     {
         if (ImGui::TreeNode("New Exchange"))
         {
+            static std::string symbols = "";
             static std::string exchange_id = "";
             static std::string exchange_source = "";
             static std::string exchange_dt_format = "";
@@ -112,18 +116,27 @@ public:
             ImGui::Text("Exchange ID: ");
             ImGui::SameLine();
             ImGui::InputText("##SearchField", &exchange_id);
+
+            // Symbol list to load on init, csv format
+            ImGui::Text("Symbols (csv)");
+            ImGui::SameLine();
+            ImGui::InputText("##Symbols", &symbols);
+
             // Create ImGui file dialog 
             ImGui::Text("Source: ");
             ImGui::SameLine();
             ImGui::Text("Selected File: %s", exchange_source.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Select"))
-                ImGuiFileDialog::Instance()->OpenDialog("ChoseExchangeSource", "Choose a Directory", nullptr, ".");
+                ImGuiFileDialog::Instance()->OpenDialog(
+                    "ChoseExchangeSource", "Choose a File", ".h5", ".", 1
+                );
             if (ImGuiFileDialog::Instance()->Display("ChoseExchangeSource"))
             {
                 if (ImGuiFileDialog::Instance()->IsOk())
                 {
-                    exchange_source = ImGuiFileDialog::Instance()->GetCurrentPath();
+                    exchange_source = ImGuiFileDialog::Instance()->GetFilePathName();
+                    //exchange_source = ImGuiFileDialog::Instance()->GetCurrentPath();
                 }
                 ImGuiFileDialog::Instance()->Close();
             }
@@ -156,7 +169,9 @@ public:
             // Create button to create exchange
             if (ImGui::Button("Create"))
             {
-                _app_state.__create_exchange(exchange_id, dt_formats[dt_format_idx], exchange_source);
+                _app_state.__create_exchange(
+                    exchange_id, dt_formats[dt_format_idx], exchange_source, symbols
+                );
             }
             ImGui::TreePop();
         }
