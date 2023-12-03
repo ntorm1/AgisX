@@ -22,7 +22,7 @@ namespace AgisX
 bool AgisXExchangeNode::serialize(Json& json) const
 {
 	AgisX::serialize_pair(json, "exchange_name", _exchange_name);
-	return AgisXNode::serialize(json);
+	return nged::Node::serialize(json);
 }
 
 
@@ -39,6 +39,14 @@ bool AgisXExchangeNode::deserialize(Json const& json)
 		return true;
 	}
 	return false;
+}
+
+
+//==================================================================================================
+std::expected<SharedPtr<Agis::AST::ExchangeNode const>, Agis::AgisException>
+AgisXExchangeNode::to_agis() const noexcept
+{
+	return std::unexpected(Agis::AgisException("not implemented"));
 }
 
 
@@ -76,7 +84,7 @@ AgisXExchangeNode::on_render_deactivate() noexcept
 
 //==================================================================================================
 void
-	AgisXExchangeNode::render_inspector() noexcept
+AgisXExchangeNode::render_inspector() noexcept
 {
 	static bool isTextActive = false;  // Track whether the text input is active
 
@@ -100,6 +108,14 @@ void
 
 static bool is_asset_node(std::string const& nonde_type) {
 	return nonde_type == "AssetReadNode" || nonde_type == "AssetOpNode";
+}
+
+
+//==================================================================================================
+std::expected<UniquePtr<Agis::AST::ExchangeViewNode>, Agis::AgisException>
+AgisXExchangeViewNode::to_agis() const noexcept
+{
+	return std::unexpected(Agis::AgisException("not implemented"));
 }
 
 

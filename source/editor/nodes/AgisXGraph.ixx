@@ -1,6 +1,7 @@
 module;
 
 #include "../ngdoc.h"
+#include "../../app/AgisXDeclare.h"
 
 export module AgisXGraph;
 
@@ -18,7 +19,7 @@ private:
 	
 public:
 	AgisXGraph(nged::NodeGraphDoc* root, Graph* parent, nged::String name);
-	std::shared_ptr<AgisXNode> outputNode() const;
+	//std::shared_ptr<AgisXStrategyNode> outputNode() const;
 
 	virtual void clear() override;
 	virtual void remove(nged::HashSet<nged::ItemID> const& items) override;

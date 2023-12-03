@@ -16,9 +16,7 @@ namespace AgisX
 AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
     : Graph(root, parent, name)
 {
-    auto outputNode = std::make_shared<AgisXStrategyNode>(
-        this,"StrategyNode", "Strategy", 0
-    );
+    auto outputNode = this->docRoot()->nodeFactory()->createNode(this, "StrategyNode");
     root->setDeserializeInplace(false);
     outputNodeID_ = docRoot()->addItem(outputNode);
     outputNode->resetID(outputNodeID_);
@@ -27,10 +25,10 @@ AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
 
 
 //==================================================================================================
-std::shared_ptr<AgisXNode> AgisXGraph::outputNode() const
-{
-	return std::static_pointer_cast<AgisXNode>(get(outputNodeID_)); 
-}
+//std::shared_ptr<AgisXStrategyNode> AgisXGraph::outputNode() const
+//{
+//	return std::static_pointer_cast<AgisXStrategyNode>(get(outputNodeID_));
+//}
 
 
 //==================================================================================================
@@ -63,7 +61,7 @@ AgisXGraph::remove(HashSet<ItemID> const& items)
     GraphTraverseResult affected;
     if (travelTopDown(affected, dirtySources)) {
         for (auto affectedItem : affected) {
-            static_cast<AgisXNode*>(affectedItem.node())->setDirty(true);
+            static_cast<nged::Node*>(affectedItem.node())->setDirty(true);
         }
     }
     Graph::remove(itemsToRemove);
@@ -112,7 +110,7 @@ void AgisXGraph::markNodeAndDownstreamDirty(ItemID id)
     GraphTraverseResult affected;
     if (travelTopDown(affected, id)) {
         for (auto affectedItem : affected) {
-            static_cast<AgisXNode*>(affectedItem.node())->setDirty(true);
+            static_cast<nged::Node*>(affectedItem.node())->setDirty(true);
         }
     }
     else {

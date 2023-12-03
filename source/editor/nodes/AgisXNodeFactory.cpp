@@ -33,7 +33,7 @@ static const AgisXNodeDef builtinNodeDefs_[] = {
 //==================================================================================================
 AgisxNodeFactory::AgisxNodeFactory() : _instance(nged::appState())
 {
-    AgisXNode::set_instance(&nged::appState());
+    nged::Node::set_instance(&nged::appState());
 }
 
 

@@ -135,6 +135,9 @@
     <ClCompile Include="source\editor\nodes\AgisXStrategyNode.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\editor\nodes\AgisXStrategyNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\app\BaseComp.h">
