@@ -27,7 +27,7 @@ void AgisXResponser::onInspect(InspectorView* view, GraphItem** items, size_t nu
             }
     }
     if (auto* node = solyNode) {
-        auto* agisx_node = static_cast<AgisXNode*>(node);
+        auto* agisx_node = static_cast<Node*>(node);
         ImGui::PushFont(ImGuiResource::instance().monoFont);
         ImGui::PushItemWidth(-1);
         if (

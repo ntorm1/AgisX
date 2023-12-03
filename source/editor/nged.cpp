@@ -1039,7 +1039,9 @@ void NodeGraphEditor::initCommands()
   mgr.add(new SimpleCommand{
     "File/New",
     "New Document ...",
-    [](GraphView* view, StringView args) { view->editor()->createNewDocAndDefaultViews(); },
+    [](GraphView* view, StringView args) {
+          view->editor()->createNewDocAndDefaultViews(); 
+      },
     Shortcut{'N', ModKey::CTRL},
   }).setMayModifyGraph(false);
   mgr.add(new SimpleCommand{

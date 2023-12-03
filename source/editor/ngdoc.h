@@ -7,6 +7,7 @@
 #include "utils.h"
 
 #include "nged_declare.h"
+#include "../app/AgisXDeclare.h"
 
 #include <shared_mutex>
 #include <random>
@@ -425,6 +426,9 @@ namespace nged {
         : public GraphItem
         , public Dyeable
     {
+    private:
+        mutable std::vector<std::pair<nged::Node*, nged::sint>> _dests;
+        bool 												  _dirty = true;
     protected:
         String type_;
         String name_;
@@ -435,6 +439,8 @@ namespace nged {
         virtual ~Node() {}
 
         // For UI:
+        virtual bool getIcon(nged::IconType& iconType, nged::StringView& iconData) const;
+        void add_dest(nged::Node* dest, nged::sint port) const;
         virtual Vec2 inputPinPos(sint i) const;
         virtual Vec2 inputPinDir(sint i) const { return Vec2{ 0, -1 }; } // hints the link direction
         virtual Vec2 outputPinPos(sint i) const;
@@ -446,9 +452,13 @@ namespace nged {
         virtual bool getNodeDescription(String& desc) const { return false; }
         virtual bool getInputDescription(sint port, String& desc) const { return false; }
         virtual bool getOutputDescription(sint port, String& desc) const { return false; }
-        virtual bool getIcon(IconType& type, StringView& content) const { return false; }
-
+        virtual void render_inspector() noexcept {}
         virtual void draw(Canvas* canvas, GraphItemState state) const override;
+
+        auto const& dests() const { return _dests; }
+        bool        dirty() const { return _dirty; }
+        void setDirty(bool dirty) { _dirty = dirty; }
+        void remove_downstream_links() const;
 
         // Data Model:
         /// numMaxInputs: returning negative value means unlimited number of inputs
@@ -501,6 +511,9 @@ namespace nged {
         virtual Dyeable* asDyeable() override { return this; }
         virtual Graph const* asGraph() const { return nullptr; }
         virtual Graph* asGraph() { return nullptr; }
+
+        static AgisX::AppState* _instance;
+        static void set_instance(AgisX::AppState* instance);
 
         // Interface:
         String const& type() const { return type_; }
@@ -1008,6 +1021,7 @@ namespace nged {
         GraphItemPool(GraphItemPool const&) = delete;
 
     public:
+        void setSeed(unsigned int seed) { randGenerator_.seed(seed); }
         ~GraphItemPool() = default;
         GraphItemPool() : randGenerator_(std::random_device()()) {}
 
@@ -1027,20 +1041,14 @@ namespace nged {
                 iid = { uint32_t(randGenerator_()), uint32_t(id) };
             }
             if (uidMap_.find(item->uid()) != uidMap_.end())
+            {
+                String uuid_string = uidToString(item->uid());
                 throw std::runtime_error("got duplicated uid");
+            }
             uidMap_[item->uid()] = iid;
             return iid;
         }
-        void release(ItemID id)
-        {
-            auto index = id.index();
-            assert(index < items_.size() && items_[index]);
-            auto item = items_[index];
-            assert(item->id() == id);
-            uidMap_.erase(item->uid());
-            freeList_.push_back(index);
-            items_[index] = nullptr;
-        }
+        void release(ItemID id);
         GraphItemPtr get(ItemID id)
         {
             auto index = id.index();
@@ -1159,6 +1167,7 @@ namespace nged {
     ///               can be saved to / loaded from disk.
     class NodeGraphDoc : public std::enable_shared_from_this<NodeGraphDoc>
     {
+        friend class Graph;
         GraphItemPool       pool_;
         NodeGraphDocHistory history_;
         String              savePath_ = "";

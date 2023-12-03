@@ -19,7 +19,7 @@ protected:
 	bool             isFocused_ = false;
 	bool             isHovered_ = false;
 	NodeGraphEditor* editor_ = nullptr;
-
+	mutable std::shared_mutex _mutex;
 	friend class ViewFactory;
 
 public:
@@ -51,9 +51,19 @@ public:
 	virtual void  onGraphModified() = 0;
 	virtual void  draw() = 0;
 
-	virtual void on_hydra_restore() {};
+	virtual void on_hydra_restore() { _mutex.unlock(); };
 	virtual void on_step() {};
 	virtual void on_reset() {};
+
+	void write_lock()
+	{
+		_mutex.lock();
+	}
+
+	void write_unlock()
+	{
+		_mutex.unlock();
+	}
 
 	// events are customable, may be "focus", "select", "delete", ...
 	virtual void onViewEvent(GraphView* view, StringView eventType) {}

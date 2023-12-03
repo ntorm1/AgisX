@@ -111,6 +111,17 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
     }
   }
 }
+
+void Node::remove_downstream_links() const
+{
+    auto parent = static_cast<nged::Graph*>(this->parent());
+    for (auto& dest : _dests) {
+        auto dest_id = dest.first->id();
+        parent->removeLink(dest_id, dest.second);
+    }
+    _dests.clear();
+}
+
 // }}} Node
 
 // Link {{{

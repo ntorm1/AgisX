@@ -9,8 +9,9 @@
 // Important: to compile on 32-bit systems, the DirectX12 backend requires code to be compiled with '#define ImTextureID ImU64'.
 // This is because we need ImTextureID to carry a 64-bit value and by default ImTextureID is defined as void*.
 // This define is set in the example .vcxproj file and need to be replicated in your app or by adding it to your imconfig.h file.
-
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
+#include <implot.h>
 #include "imgui_internal.h"
 #include "ImGuiFileDialog.h"
 #include "imgui_impl_win32.h"
@@ -97,6 +98,7 @@ int main(int, char**)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGuiContext* myImGuiContext = ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGui::SetCurrentContext(myImGuiContext);
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -233,6 +235,7 @@ int main(int, char**)
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
+    ImPlot::DestroyContext();
 
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);

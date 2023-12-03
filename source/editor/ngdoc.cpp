@@ -1,6 +1,8 @@
 #include "ngdoc.h"
 #include "style.h"
 #include "utils.h"
+#include "res/fa_icondef.h"
+
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -15,6 +17,10 @@
 
 namespace nged {
     typedef nlohmann::json Json;
+
+
+    AgisX::AppState* Node::_instance = nullptr;
+
 
     // json {{{
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vec2, x, y);
@@ -133,6 +139,45 @@ namespace nged {
             name_ = std::move(newname);
     }
 
+    void Node::add_dest(nged::Node* dest, nged::sint port) const
+    {
+        _dests.push_back({ dest, port });
+    }
+
+    //==================================================================================================
+    bool Node::getIcon(nged::IconType& iconType, nged::StringView& iconData) const
+    {
+        iconType = IconType::Text;
+        if (type() == "ExchangeNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_DATABASE;
+        }
+        else if (type() == "AssetReadNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_BOOK_OPEN;
+        }
+        else if (type() == "AssetOpNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_CALCULATOR;
+        }
+        else if (type() == "AllocationNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_FLAG_CHECKERED;
+        }
+        else if (type() == "ExchangeViewNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_TABLE;
+        }
+        else if (type() == "StrategyNode") {
+            iconType = IconType::IconFont;
+            iconData = ICON_FA_COGS;
+        }
+        else {
+            iconData = type();
+        }
+        return true;
+    }
+
     Vec2 Node::inputPinPos(sint i) const
     {
         auto sz = aabb_.size();
@@ -183,6 +228,11 @@ namespace nged {
             return false;
         }
         // TODO: support fixed inputs
+    }
+
+    void Node::set_instance(AgisX::AppState* instance)
+    {
+        _instance = instance;
     }
 
     sint Node::getLastConnectedInputPort() const
@@ -1208,13 +1258,14 @@ namespace nged {
     bool Graph::deserialize(Json const& json)
     {
         auto doc = docRoot();
-
         HashMap<UID, ItemID>    uidmap;    // uid to id
         HashMap<size_t, ItemID> idmap;     // old id to new id
         HashMap<UID, ItemID>    uidoldmap; // uid to old id
         for (auto&& itemdata : json["items"])
             if (itemdata.contains("uid"))
+            {
                 uidoldmap[uidFromString(String(itemdata["uid"]))] = ItemID(itemdata["id"].get<size_t>());
+            }
         HashSet<ItemID> redundantItems;
         for (auto id : items()) {
             auto item = get(id);
@@ -1226,32 +1277,31 @@ namespace nged {
             }
         }
         remove(redundantItems);
+        auto json_count = json["items"].size();
         for (auto&& itemdata : json["items"]) {
-            auto uid = itemdata.contains("uid") ? uidFromString(String(itemdata["uid"])) : UID();
-            if (auto itr = uidmap.find(uid); itr != uidmap.end()) {
-                if (!get(itr->second)->deserialize(itemdata)) {
-                    msghub::errorf("failed to import item {}", itemdata.dump(2));
-                    return false;
-                }
+            String type = itemdata["type"];
+            auto uid = UID();
+            if (type == "StrategyNode")
+            {
+                continue;
+            }
+            String       factory = itemdata["f"];
+            GraphItemPtr newitem;
+            if (factory.empty() || factory == "node") {
+                    
+                newitem = nodeFactory()->createNode(this, type);
             }
             else {
-                String       factory = itemdata["f"];
-                GraphItemPtr newitem;
-                if (factory.empty() || factory == "node") {
-                    String type = itemdata["type"];
-                    newitem = nodeFactory()->createNode(this, type);
-                }
-                else {
-                    newitem = docRoot()->itemFactory()->make(this, factory);
-                }
-                if (!newitem || !newitem->deserialize(itemdata)) {
-                    msghub::errorf("failed to import item {}", itemdata.dump(2));
-                    return false;
-                }
-                auto newid = add(newitem);
-                idmap[itemdata["id"]] = newid;
-                uidmap[newitem->uid()] = newid;
+                newitem = docRoot()->itemFactory()->make(this, factory);
             }
+            if (!newitem || !newitem->deserialize(itemdata)) {
+                msghub::errorf("failed to import item {}", itemdata.dump(2));
+                return false;
+            }
+            auto newid = add(newitem);
+            idmap[itemdata["id"]] = newid;
+            uidmap[newitem->uid()] = newid;
+            
         }
 
         HashSet<OutputConnection> newlinks;
@@ -1942,5 +1992,17 @@ namespace nged {
         return size;
     }
     // }}} Canvas
+
+    void GraphItemPool::release(ItemID id)
+    {
+        auto index = id.index();
+        assert(index < items_.size() && items_[index]);
+        auto item = items_[index];
+        assert(item->id() == id);
+        uidMap_.erase(item->uid());
+        freeList_.push_back(index);
+        items_[index] = nullptr;
+    }
+ 
 
 } // namespace nged

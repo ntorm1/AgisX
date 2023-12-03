@@ -7,17 +7,41 @@
 #include <vector>
 #include <string>
 #include <shared_mutex>
+#include <unordered_map>
 
 namespace AgisX
 {
 
+
+//============================================================================
+struct AgisXPlotViewPrivate
+{
+	AgisXPlotViewPrivate(Agis::Asset const&);
+	void add_data(
+		std::string const& column,
+		std::vector<double>& data
+	);
+	void reset();
+	Agis::Asset const& _asset;
+	std::unordered_map<std::string, std::vector<double>> _data;
+	std::vector<double> _dt_index;
+};
+
+
+//============================================================================
 struct AgisXAssetViewPrivate
 {
 	AgisXAssetViewPrivate() = delete;
 	AgisXAssetViewPrivate(Agis::Asset const&);
 	~AgisXAssetViewPrivate();
+
+	void asset_table_context_menu();
 	void draw();
+	void draw_plot();
+	void draw_table();
+
 	Agis::Asset const& _asset;
+	AgisXPlotViewPrivate _plot_view;
 	std::vector<std::string> _columns;
 	std::vector<double> const* _data;
 	std::vector<std::string> _dt_index;
@@ -25,6 +49,9 @@ struct AgisXAssetViewPrivate
 };
 
 
+
+
+//============================================================================
 class AgisXExchangeViewPrivate
 {
 private:

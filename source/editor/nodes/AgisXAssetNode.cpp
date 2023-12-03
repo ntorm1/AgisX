@@ -6,6 +6,8 @@ module;
 
 #include "AgisAST.h"
 
+import AssetNode;
+
 module AgisXAssetNodeMod;
 import AgisXApp;
 import AgisXExchangeNodeMod;
@@ -55,8 +57,16 @@ AgisXAssetReadNode::acceptInput(nged::sint port, Node const* sourceNode, nged::s
 
 
 //==================================================================================================
+std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException> AgisXAssetReadNode::to_agis() const noexcept
+{
+	return std::unexpected(Agis::AgisException("not implemented"));
+}
+
+
+//==================================================================================================
 void AgisXAssetReadNode::render_inspector() noexcept
 {
+	static bool first_pass = true;
 	NodePtr exchange_parent = nullptr;
 	sint out_port = 0;
 	if (!getInput(0, exchange_parent, out_port)) {
@@ -89,19 +99,37 @@ void AgisXAssetReadNode::render_inspector() noexcept
 			ImGui::Text("index: ");
 			ImGui::SameLine();
 			ImGui::InputInt("##index", &_index);
-			if (_column != current_item || _index != current_index) {
+			if (first_pass || _column != current_item || _index != current_index) {
 				setDirty(true);
 				auto n = name();
 				rename(_columns[_column] +" " + std::to_string(_index), n);
 			}
 		}
 	}
+	if (first_pass) {
+		first_pass = false;
+	}
+}
+
+
+//==================================================================================================
+std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException> AgisXAssetOpNode::to_agis() const noexcept
+{
+	return std::unexpected(Agis::AgisException("not implemented"));
 }
 
 
 //==================================================================================================
 void AgisXAssetOpNode::render_inspector() noexcept
 {
+	ImGui::Text("Opp Type: ");
+	ImGui::SetItemDefaultFocus();
+	for(auto& [opp_str, opp] : Agis::AST::AssetLambdaNode::AgisOperatorMap()) {
+		if (ImGui::RadioButton(opp_str.c_str(), _opp == opp)) {
+			_opp = opp;
+			setDirty(true);
+		}
+	}
 }
 
 
@@ -111,7 +139,7 @@ AgisXAssetReadNode::serialize(Json& json) const
 {
 	AgisX::serialize_pair(json, "column",std::to_string(_column));
 	AgisX::serialize_pair(json, "index", std::to_string(_index));
-	return AgisXNode::serialize(json);
+	return nged::Node::serialize(json);
 }
 
 
@@ -145,7 +173,7 @@ AgisXAssetReadNode::deserialize(Json const& json)
 bool AgisXAssetOpNode::serialize(Json& json) const
 {
 	AgisX::serialize_pair(json, "op_type", AgisX::agis_operator_to_string(_opp));
-	return AgisXNode::serialize(json);
+	return nged::Node::serialize(json);
 }
 
 
