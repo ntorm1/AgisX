@@ -41,17 +41,25 @@ private:
 
 
 export class AgisXExchangeViewNode : 
-	public AgisXNode<UniquePtr<Agis::AST::ExchangeViewNode>>
+	public AgisXNode<UniquePtr<Agis::AST::ExchangeViewSortNode>>
 {
 public:
 	template<typename... Args>
 	AgisXExchangeViewNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
 
-	std::expected<UniquePtr<Agis::AST::ExchangeViewNode>, Agis::AgisException> to_agis() const noexcept override;
+	std::expected<UniquePtr<Agis::AST::ExchangeViewSortNode>, Agis::AgisException> to_agis() const noexcept override;
 	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
-	virtual void render_inspector() noexcept override {}
-	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
-	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
+	virtual void render_inspector() noexcept override;
+	bool deserialize(nged::Json const& json) override;
+	bool serialize(nged::Json& json) const override;
+
+private:
+	Agis::AST::ExchangeQueryType _query_type = Agis::AST::ExchangeQueryType::Default;
+	int _n = -1;
+
+	mutable std::optional<AgisX::AgisXAssetOpNode const*> _asset_input = std::nullopt;
+	mutable std::optional<AgisX::AgisXExchangeNode const*> _exchange = std::nullopt;
 };
+
 
 }
