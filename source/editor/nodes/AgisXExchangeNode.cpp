@@ -1,4 +1,6 @@
 module;
+#include <Eigen/Dense>
+#include "AgisMacros.h"
 #include "../nged_imgui.h"
 #include "../ngdoc.h"
 
@@ -7,19 +9,19 @@ module;
 #include "AgisAST.h"
 
 module AgisXExchangeNodeMod;
+import AgisXAssetNodeMod;
 import AgisXGraph;
 import AgisXApp;
-
+import AssetNode;
+import ExchangeNode;
 import ExchangeModule;
-
-using namespace nged;
 
 
 namespace AgisX
 {
 
 //==================================================================================================
-bool AgisXExchangeNode::serialize(Json& json) const
+bool AgisXExchangeNode::serialize(nged::Json& json) const
 {
 	AgisX::serialize_pair(json, "exchange_name", _exchange_name);
 	return nged::Node::serialize(json);
@@ -27,7 +29,7 @@ bool AgisXExchangeNode::serialize(Json& json) const
 
 
 //==================================================================================================
-bool AgisXExchangeNode::deserialize(Json const& json)
+bool AgisXExchangeNode::deserialize(nged::Json const& json)
 {
 	if (nged::Node::deserialize(json)) {
 		auto opt_str = deserialize_string(json, "exchange_name");
@@ -46,7 +48,11 @@ bool AgisXExchangeNode::deserialize(Json const& json)
 std::expected<SharedPtr<Agis::AST::ExchangeNode const>, Agis::AgisException>
 AgisXExchangeNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	auto exchange_opt = app().get_exchange(_exchange_name);
+	if (!exchange_opt) {
+		return std::unexpected(Agis::AgisException("exchange not found"));
+	}
+	return std::make_shared<Agis::AST::ExchangeNode>(*exchange_opt);
 }
 
 
@@ -76,7 +82,7 @@ AgisXExchangeNode::on_render_deactivate() noexcept
 	auto parent = static_cast<AgisXGraph*>(this->parent());
 	parent->markNodeAndDownstreamDirty(id());
 	if (!this->exchange_exists()) {
-		MessageHub::errorf("exchange {} not found", _exchange_name);
+		nged::MessageHub::errorf("exchange {} not found", _exchange_name);
 		remove_downstream_links();
 	}
 }
@@ -106,16 +112,28 @@ AgisXExchangeNode::render_inspector() noexcept
 	}
 }
 
-static bool is_asset_node(std::string const& nonde_type) {
-	return nonde_type == "AssetReadNode" || nonde_type == "AssetOpNode";
-}
-
 
 //==================================================================================================
-std::expected<UniquePtr<Agis::AST::ExchangeViewNode>, Agis::AgisException>
+std::expected<UniquePtr<Agis::AST::ExchangeViewSortNode>, Agis::AgisException>
 AgisXExchangeViewNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	if (!_asset_input) {
+		return std::unexpected(Agis::AgisException("no asset input"));
+	}
+	if (!_exchange) {
+		return std::unexpected(Agis::AgisException("no exchange input"));
+	}
+	AGIS_ASSIGN_OR_RETURN(asset_node, (*_asset_input)->to_agis());
+	AGIS_ASSIGN_OR_RETURN(exchange_node, (*_exchange)->to_agis());
+	auto ev_node = std::make_unique<Agis::AST::ExchangeViewNode>(
+		exchange_node,
+		std::move(asset_node)
+	);
+	return std::make_unique<Agis::AST::ExchangeViewSortNode>(
+		std::move(ev_node),
+		_query_type,
+		_n
+	);
 }
 
 
@@ -126,25 +144,97 @@ AgisXExchangeViewNode::acceptInput(nged::sint port, Node const* sourceNode, nged
 	// left port must be exchange node 
 	if (port == 0) {
 		if (sourceNode->type() != "ExchangeNode") {
-			MessageHub::errorf("expected ExchangeNode, found {}", sourceNode->type());
+			nged::MessageHub::errorf("expected ExchangeNode, found {}", sourceNode->type());
 			return false;
 		}
 		auto node = static_cast<AgisXExchangeNode const*>(sourceNode);
 		if (!node->exchange_exists()) {
-			MessageHub::errorf("exchange {} not found", node->exchangeName());
+			nged::MessageHub::errorf("exchange {} not found", node->exchangeName());
 			return false;
 		}
-		// remove const from this 
+		_exchange = node;
 		auto non_const_this = const_cast<AgisXExchangeViewNode*>(this);
 		node->add_dest(non_const_this, 0);
 		return true;
 	}
 	// right port must be asset node
 	else if (port == 1) {
-		return is_asset_node(sourceNode->type());
+		if (sourceNode->type() != "AssetOpNode")
+		{
+			return false;
+		}
+		_asset_input = static_cast<AgisXAssetOpNode const*>(sourceNode);
+		return true;
 	}
-
 	return false;
+}
+
+
+//==================================================================================================
+void
+AgisXExchangeViewNode::render_inspector() noexcept
+{
+	ImGui::Text("Exchange View Query Type: ");
+	ImGui::SetItemDefaultFocus();
+	for (auto& [opp_str, opp] : Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap()) {
+		if (ImGui::RadioButton(opp_str.c_str(), _query_type == opp)) {
+			_query_type = opp;
+			setDirty(true);
+		}
+	}
+	ImGui::Text("N: ");
+	if (ImGui::InputInt("##N", &_n)) {
+		setDirty(true);
+	}
+}
+
+
+//==================================================================================================
+bool AgisXExchangeViewNode::deserialize(nged::Json const& json)
+{
+	if (nged::Node::deserialize(json)) {
+		auto query_opt = deserialize_string(json, "query_type");
+		if (!query_opt) {
+			return false;
+		}
+		auto& query_string = *query_opt;
+		auto it = Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap().find(query_string);
+		if (it == Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap().end()) {
+			return false;
+		}
+		_query_type = it->second;
+		auto n_opt = deserialize_string(json, "n");
+		if (!n_opt) {
+			return false;
+		}
+		try {
+			_n = std::stoi(*n_opt);
+		}
+		catch (...) {
+			return false;
+		}
+	}
+	return false;
+}
+
+
+//==================================================================================================
+bool AgisXExchangeViewNode::serialize(nged::Json& json) const
+{
+	// find query type string in map
+	auto it = std::find_if(
+		Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap().begin(),
+		Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap().end(),
+		[this](auto const& pair) {
+			return pair.second == _query_type;
+		}
+	);
+	if (it == Agis::AST::ExchangeViewSortNode::ExchangeQueryTypeMap().end()) {
+		return false;
+	}
+	AgisX::serialize_pair(json, "query_type", it->first);
+	AgisX::serialize_pair(json, "n", std::to_string(_n));
+	return nged::Node::serialize(json);
 }
 
 }

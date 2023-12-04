@@ -1,9 +1,9 @@
 module;
+#include "AgisMacros.h"
 #include "../nged_imgui.h"
 #include "../ngdoc.h"
 
 #include "AgisXSerialize.h"
-
 #include "AgisAST.h"
 
 import AssetNode;
@@ -12,7 +12,6 @@ module AgisXAssetNodeMod;
 import AgisXApp;
 import AgisXExchangeNodeMod;
 
-using namespace nged;
 
 namespace AgisX
 {
@@ -24,17 +23,18 @@ static bool is_asset_node(std::string const& nonde_type) {
 
 //==================================================================================================
 bool
-AgisXAssetOpNode::acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const
+AgisXAssetOpNode::acceptInput(nged::sint port, nged::Node const* sourceNode, nged::sint sourcePort) const
 {
-	// left port can be read or operation
+	// input node can be read or operation
+	if (!is_asset_node(sourceNode->type())) return false;
 	if (port == 0) {
-		return is_asset_node(sourceNode->type());
+		_left = sourceNode;
 	}
-	// right port must be read opp
-	else if (port == 1) {
-		return sourceNode->type() == "AssetReadNode";
+	else if (port == 1) 
+	{
+		_right = sourceNode;
 	}
-	return false;
+	return true;
 }
 
 
@@ -48,7 +48,7 @@ AgisXAssetReadNode::acceptInput(nged::sint port, Node const* sourceNode, nged::s
 	}
 	auto node = static_cast<AgisXExchangeNode const*>(sourceNode);
 	if (!node->exchange_exists()) {
-		MessageHub::errorf("exchange {} not found", node->exchangeName());
+		nged::MessageHub::errorf("exchange {} not found", node->exchangeName());
 		return false;
 	}
 	_columns = node->get_columns();
@@ -57,9 +57,10 @@ AgisXAssetReadNode::acceptInput(nged::sint port, Node const* sourceNode, nged::s
 
 
 //==================================================================================================
-std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException> AgisXAssetReadNode::to_agis() const noexcept
+std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException>
+AgisXAssetReadNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	return std::make_unique<Agis::AST::AssetLambdaReadNode>(static_cast<size_t>(_column), _index);
 }
 
 
@@ -67,8 +68,8 @@ std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException> AgisXA
 void AgisXAssetReadNode::render_inspector() noexcept
 {
 	static bool first_pass = true;
-	NodePtr exchange_parent = nullptr;
-	sint out_port = 0;
+	nged::NodePtr exchange_parent = nullptr;
+	nged::sint out_port = 0;
 	if (!getInput(0, exchange_parent, out_port)) {
 		ImGui::Text("no exchange");
 	}
@@ -113,9 +114,65 @@ void AgisXAssetReadNode::render_inspector() noexcept
 
 
 //==================================================================================================
-std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException> AgisXAssetOpNode::to_agis() const noexcept
+std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException>
+asset_node_to_agis(nged::Node const* node)
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	if ((node)->type() == "AssetReadNode")
+	{
+		auto res = static_cast<AgisXAssetReadNode const*>(node)->to_agis();
+		if (!res)
+		{
+			return std::unexpected(
+				Agis::AgisException(res.error().what())
+			);
+		}
+		return std::move(*res);
+	}
+	else if ((node)->type() == "AssetOpNode")
+	{
+		auto res = static_cast<AgisXAssetOpNode const*>(node)->to_agis();
+		if (!res)
+		{
+			return std::unexpected(
+				Agis::AgisException(res.error().what())
+			);
+		}
+		return std::move(*res);
+	}
+	else
+	{
+		return std::unexpected(
+			Agis::AgisException("invalid left node type")
+		);
+	}
+}
+
+
+
+//==================================================================================================
+std::expected<UniquePtr<Agis::AST::AssetLambdaNode>, Agis::AgisException>
+AgisXAssetOpNode::to_agis() const noexcept
+{
+	UniquePtr<AssetLambdaNode> right_node = nullptr;
+	std::optional<UniquePtr<AssetLambdaNode>> left_node = std::nullopt;
+	if (_left)
+	{
+		AGIS_ASSIGN_OR_RETURN(node, asset_node_to_agis(*_left));
+		left_node = std::move(node);
+	}
+	if (!_right)
+	{
+		return std::unexpected(
+			Agis::AgisException("right node is null")
+		);
+	}
+	AGIS_ASSIGN_OR_RETURN(node, asset_node_to_agis(*_right));
+	right_node = std::move(node);
+	return std::make_unique<Agis::AST::AssetOpperationNode>(
+		std::move(left_node),
+		std::move(right_node),
+		_opp
+	);
 }
 
 

@@ -8,6 +8,8 @@ module;
 export module AgisXStrategyNodeMod;
 
 import AgisXNode;
+import AgisXExchangeNodeMod;
+import AllocationNode;
 
 namespace AgisX
 {
@@ -36,11 +38,18 @@ export class AgisXAllocationNode
 public:
 	template<typename... Args>
 	AgisXAllocationNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
-	void render_inspector() noexcept override {}
+	void render_inspector() noexcept override;
 
+	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	std::expected<UniquePtr<Agis::AST::AllocationNode>, Agis::AgisException> to_agis() const noexcept override;
-	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
-	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
+	bool deserialize(nged::Json const& json) override;
+	bool serialize(nged::Json& json) const override;
+
+private:
+	Agis::AST::AllocType _alloc_type = Agis::AST::AllocType::UNIFORM;
+	mutable std::optional<AgisX::AgisXExchangeViewNode const*> _ev_input = std::nullopt;
+
+
 };
 
 

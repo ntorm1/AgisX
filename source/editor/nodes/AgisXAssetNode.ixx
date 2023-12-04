@@ -61,7 +61,8 @@ public:
 
 private:
 	Agis::AST::AgisOperator _opp = Agis::AST::AgisOperator::INIT;
-
+	mutable std::optional<nged::Node const*> _left = std::nullopt;
+	mutable std::optional<nged::Node const*> _right = std::nullopt;
 };
 
 
