@@ -10,6 +10,7 @@ export module AgisXStrategyNodeMod;
 import AgisXNode;
 import AgisXExchangeNodeMod;
 import AllocationNode;
+import ASTStrategyModule;
 
 namespace AgisX
 {
@@ -24,11 +25,15 @@ public:
 
 	nged::sint numOutputs() const override { return 0; }
 
-	void render_inspector() noexcept override {}
+	void render_inspector() noexcept override;
 
 	std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> to_agis() const noexcept override;
 	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
 	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
+
+private:
+	std::optional<Agis::ASTStrategy*> _strategy = std::nullopt;
+
 };
 
 

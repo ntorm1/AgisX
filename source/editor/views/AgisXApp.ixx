@@ -23,7 +23,9 @@ public:
 	std::optional<Agis::Portfolio const*> get_portfolio(std::string const& id) const noexcept;
 	std::optional<Agis::Exchange const*> get_exchange(std::string const& id) const noexcept;
 	std::unordered_map<std::string, size_t> const* get_exchange_ids() const noexcept;
-	
+	std::unordered_map<std::string, size_t> const* get_portfolio_ids() const noexcept;
+	std::unordered_map<std::string, Agis::Strategy*> const& get_strategies() const noexcept;
+
 	void __save_state() const noexcept;
 	void __load_state() noexcept;
 	void __build() noexcept;
@@ -63,13 +65,13 @@ public:
 
 	// variadic template info func
 	template<class... T>
-	void infof(T... args)
+	void infof(T... args) const noexcept
 	{
 		nged::MessageHub::infof(std::forward<T>(args)...);
 	}
 
 	template<class... T>
-	void errorf(T... args)
+	void errorf(T... args) const noexcept
 	{
 		nged::MessageHub::errorf(std::forward<T>(args)...);
 	}

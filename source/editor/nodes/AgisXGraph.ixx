@@ -28,6 +28,12 @@ public:
 	virtual nged::LinkPtr setLink(nged::ItemID sourceItem, nged::sint sourcePort, nged::ItemID destItem, nged::sint destPort)	override;
 	
 	void markNodeAndDownstreamDirty(nged::ItemID id);
+
+	void set_strategy_node(nged::Node* node) noexcept { _strategy_node = node; }
+	nged::Node const* strategy_node() const noexcept { return _strategy_node; }
+
+private:
+	nged::Node* _strategy_node = nullptr;
 	
 };
 

@@ -5,6 +5,7 @@ module;
 
 module AgisXStrategyNodeMod;
 
+import AgisXApp;
 import StrategyNode;
 import AllocationNode;
 
@@ -72,6 +73,36 @@ bool AgisXAllocationNode::serialize(nged::Json& json) const
 	return nged::Node::serialize(json);
 }
 
+
+void AgisXStrategyNode::render_inspector() noexcept
+{
+	static std::string strategy_id;
+	ImGui::Text("Strategy ID: ");
+	ImGui::SameLine();
+	auto& strategies = app().get_strategies();
+	if (ImGui::BeginCombo("##StrategyID", strategy_id.c_str()))
+	{
+		for (auto& [id, strategy] : strategies)
+		{
+			bool is_selected = (strategy_id == id);
+			if (ImGui::Selectable(id.c_str(), is_selected))
+			{
+				strategy_id = id;
+				Agis::ASTStrategy* s = dynamic_cast<Agis::ASTStrategy*>(strategy);
+				if (!s)
+				{
+					app().errorf("Strategy {} is not an Agis::ASTStrategy", id);
+				}
+				_strategy = s;
+			}
+			if (is_selected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+}
 
 //==================================================================================================
 std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> AgisXStrategyNode::to_agis() const noexcept

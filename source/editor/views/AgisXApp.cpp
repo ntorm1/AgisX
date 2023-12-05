@@ -112,10 +112,28 @@ AppState::get_exchange(std::string const& id) const noexcept
 
 
 //============================================================================
-std::unordered_map<std::string, size_t> const* AppState::get_exchange_ids() const noexcept
+std::unordered_map<std::string, size_t> const*
+AppState::get_exchange_ids() const noexcept
 {
     return &_hydra->get_exchanges().get_exchange_indecies();
 }
+
+
+//============================================================================
+std::unordered_map<std::string, size_t> const*
+AppState::get_portfolio_ids() const noexcept
+{
+    return nullptr;
+}
+
+
+//============================================================================
+std::unordered_map<std::string, Agis::Strategy*> const&
+AppState::get_strategies() const noexcept
+{
+    return _hydra->get_strategies();
+}
+
 
 //============================================================================
 void
