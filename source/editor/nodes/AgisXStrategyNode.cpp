@@ -1,10 +1,12 @@
 module;
 #include "../nged_imgui.h"
-
 #include "AgisXSerialize.h"
 
 module AgisXStrategyNodeMod;
 
+import <filesystem>;
+
+import AgisXApp;
 import StrategyNode;
 import AllocationNode;
 
@@ -74,9 +76,25 @@ bool AgisXAllocationNode::serialize(nged::Json& json) const
 
 
 //==================================================================================================
+void
+AgisXStrategyNode::render_inspector() noexcept
+{
+	ImGui::Text("Strategy ID: %s", strategy().get_strategy_id().c_str());
+}
+
+//==================================================================================================
 std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> AgisXStrategyNode::to_agis() const noexcept
 {
 	return std::unexpected(Agis::AgisException("not implemented"));
+}
+
+
+//==================================================================================================
+std::expected<bool, Agis::AgisException>
+AgisXStrategyNode::on_strategy_changed() noexcept
+{
+	parent()->docRoot()->open(strategy().graph_file_path());
+	return true;
 }
 
 }

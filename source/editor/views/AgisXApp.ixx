@@ -23,7 +23,9 @@ public:
 	std::optional<Agis::Portfolio const*> get_portfolio(std::string const& id) const noexcept;
 	std::optional<Agis::Exchange const*> get_exchange(std::string const& id) const noexcept;
 	std::unordered_map<std::string, size_t> const* get_exchange_ids() const noexcept;
-	
+	std::unordered_map<std::string, size_t> const* get_portfolio_ids() const noexcept;
+	std::unordered_map<std::string, Agis::Strategy*> const& get_strategies() const noexcept;
+
 	void __save_state() const noexcept;
 	void __load_state() noexcept;
 	void __build() noexcept;
@@ -36,7 +38,6 @@ public:
 		std::string const& exchange_id,
 		double cash
 	);
-
 	void __create_exchange(
 		std::string const& id,
 		std::string const& dt_format,
@@ -52,6 +53,7 @@ public:
 	void add_view(std::string const& name, nged::GraphViewPtr view) { WRITE_LOCK _views[name] = view; }
 	//void update_time(long long global_time, long long next_global_time);
 
+	void emit_on_strategy_select(std::optional<Agis::Strategy*> strategy);
 	void emit_on_hydra_restore();
 	void emit_lock(bool lock = true);
 
@@ -63,16 +65,18 @@ public:
 
 	// variadic template info func
 	template<class... T>
-	void infof(T... args)
+	void infof(T... args) const noexcept
 	{
 		nged::MessageHub::infof(std::forward<T>(args)...);
 	}
 
 	template<class... T>
-	void errorf(T... args)
+	void errorf(T... args) const noexcept
 	{
 		nged::MessageHub::errorf(std::forward<T>(args)...);
 	}
+
+	std::string const& env_dir() const noexcept { return _env_dir; }
 
 private:
 	mutable std::shared_mutex _mutex;

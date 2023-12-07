@@ -434,6 +434,7 @@ namespace nged {
         String name_;
         Color  color_;
 
+
     public:
         Node(Graph* parent, String type = "", String name = "");
         virtual ~Node() {}

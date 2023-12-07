@@ -20,7 +20,6 @@ public:
 
 	template<typename... Args>
 	AgisXAssetReadNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) {}
-	bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	nged::sint numOutputs() const override { return 1; }
 
 	auto const& column() const { return _column; }
@@ -32,7 +31,6 @@ public:
 	bool deserialize(nged::Json const& json) override;
 
 private:
-	mutable std::vector<std::string> _columns;
 	int _column = 0;
 	int _index = 0;
 };

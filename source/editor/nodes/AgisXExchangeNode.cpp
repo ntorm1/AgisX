@@ -10,6 +10,7 @@ module;
 
 module AgisXExchangeNodeMod;
 import AgisXAssetNodeMod;
+import AgisXStrategyNodeMod;
 import AgisXGraph;
 import AgisXApp;
 import AssetNode;
@@ -57,15 +58,7 @@ AgisXExchangeNode::to_agis() const noexcept
 
 
 //==================================================================================================
-bool
-AgisXExchangeNode::exchange_exists() const noexcept
-{
-	return app().get_exchange(_exchange_name).has_value();
-}
-
-
-//==================================================================================================
-std::vector<std::string> AgisXExchangeNode::get_columns() const noexcept
+std::vector<std::string> AgisXExchangeNode::copy_columns() const noexcept
 {
 	auto exchange_opt = app().get_exchange(_exchange_name);
 	if(!exchange_opt) {
@@ -77,39 +70,10 @@ std::vector<std::string> AgisXExchangeNode::get_columns() const noexcept
 
 //==================================================================================================
 void
-AgisXExchangeNode::on_render_deactivate() noexcept
-{
-	auto parent = static_cast<AgisXGraph*>(this->parent());
-	parent->markNodeAndDownstreamDirty(id());
-	if (!this->exchange_exists()) {
-		nged::MessageHub::errorf("exchange {} not found", _exchange_name);
-		remove_downstream_links();
-	}
-}
-
-
-//==================================================================================================
-void
 AgisXExchangeNode::render_inspector() noexcept
 {
-	static bool isTextActive = false;  // Track whether the text input is active
-
-	bool input_changed = false;
 	// create text upload for exchange name
-	ImGui::Text("Exchange Name");
-	if (ImGui::InputText("##exchange_name", &_exchange_name)) {
-		if (name() != _exchange_name) {
-			auto n = name();
-			rename(_exchange_name,n);
-			input_changed = true;
-		}
-		isTextActive = true;  // Text input is active
-	}
-	// Check if the input text field is deactivated and was previously active
-	if (!ImGui::IsItemActive() && isTextActive) {
-		on_render_deactivate();
-		isTextActive = false;
-	}
+	ImGui::Text("Exchange Name: %s", _exchange_name.c_str());
 }
 
 
@@ -120,11 +84,9 @@ AgisXExchangeViewNode::to_agis() const noexcept
 	if (!_asset_input) {
 		return std::unexpected(Agis::AgisException("no asset input"));
 	}
-	if (!_exchange) {
-		return std::unexpected(Agis::AgisException("no exchange input"));
-	}
 	AGIS_ASSIGN_OR_RETURN(asset_node, (*_asset_input)->to_agis());
-	AGIS_ASSIGN_OR_RETURN(exchange_node, (*_exchange)->to_agis());
+	auto& agisx_exchange_node = parent_strategy_node().get_exchange_node();
+	AGIS_ASSIGN_OR_RETURN(exchange_node, agisx_exchange_node.to_agis());
 	auto ev_node = std::make_unique<Agis::AST::ExchangeViewNode>(
 		exchange_node,
 		std::move(asset_node)
@@ -141,34 +103,14 @@ AgisXExchangeViewNode::to_agis() const noexcept
 bool
 AgisXExchangeViewNode::acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const
 {
-	// left port must be exchange node 
-	if (port == 0) {
-		if (sourceNode->type() != "ExchangeNode") {
-			nged::MessageHub::errorf("expected ExchangeNode, found {}", sourceNode->type());
-			return false;
-		}
-		auto node = static_cast<AgisXExchangeNode const*>(sourceNode);
-		if (!node->exchange_exists()) {
-			nged::MessageHub::errorf("exchange {} not found", node->exchangeName());
-			return false;
-		}
-		_exchange = node;
-		auto non_const_this = const_cast<AgisXExchangeViewNode*>(this);
-		node->add_dest(non_const_this, 0);
-		return true;
+	if (sourceNode->type() != "AssetOpNode")
+	{
+		nged::MessageHub::errorf("expected AssetOpNode, found {}", sourceNode->type());
+		return false;
 	}
-	// right port must be asset node
-	else if (port == 1) {
-		if (sourceNode->type() != "AssetOpNode")
-		{
-			return false;
-		}
-		_asset_input = static_cast<AgisXAssetOpNode const*>(sourceNode);
-		return true;
-	}
-	return false;
+	_asset_input = static_cast<AgisXAssetOpNode const*>(sourceNode);
+	return true;
 }
-
 
 //==================================================================================================
 void

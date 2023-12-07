@@ -1,5 +1,6 @@
 module;
 #include <Windows.h>
+#include <fstream>
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <string>
@@ -14,6 +15,9 @@ import HydraModule;
 import ExchangeMapModule;
 import ASTStrategyModule;
 import AgisTimeUtils;
+
+import AgisXNodeFactory;
+import AgisXGraph;
 
 using namespace Agis;
 
@@ -73,6 +77,7 @@ AppState::AppState()
     if (!std::filesystem::exists(env_path))
     {
         std::filesystem::create_directories(env_path);
+        std::filesystem::create_directories(env_path / "strategies");
     }
     _env_dir = env_path.string();
 }
@@ -112,10 +117,28 @@ AppState::get_exchange(std::string const& id) const noexcept
 
 
 //============================================================================
-std::unordered_map<std::string, size_t> const* AppState::get_exchange_ids() const noexcept
+std::unordered_map<std::string, size_t> const*
+AppState::get_exchange_ids() const noexcept
 {
     return &_hydra->get_exchanges().get_exchange_indecies();
 }
+
+
+//============================================================================
+std::unordered_map<std::string, size_t> const*
+AppState::get_portfolio_ids() const noexcept
+{
+    return nullptr;
+}
+
+
+//============================================================================
+std::unordered_map<std::string, Agis::Strategy*> const&
+AppState::get_strategies() const noexcept
+{
+    return _hydra->get_strategies();
+}
+
 
 //============================================================================
 void
@@ -244,11 +267,24 @@ AppState::__create_strategy(
         nged::MessageHub::errorf("failed to create strategy: portfolio {} does not exist", portfolio_id);
 		return;
     }
+    // create the .ng graph file if needed 
+    auto env_dir_fs = std::filesystem::path(env_dir());
+    auto strategy_file = env_dir_fs / "strategies" / (strategy_id + ".ng");
+    if (!std::filesystem::exists(strategy_file))
+    {
+        std::ofstream f(strategy_file);
+        if (!f.is_open())
+        {
+            nged::MessageHub::errorf("could not create strategy file");
+        }
+        f.close();
+    }
     auto strategy = std::make_unique<ASTStrategy>(
         strategy_id,
         cash,
         *exchange_opt.value(),
-        *portfolio_opt.value()
+        *portfolio_opt.value(),
+        strategy_file.string()
     );
     auto res = _hydra->register_strategy(std::move(strategy));
     if (!res) 
@@ -315,6 +351,31 @@ AppState::__create_portfolio(
 	nged::MessageHub::infof("created portfolio: {}", id);
 }
 
+
+
+//============================================================================
+void
+AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
+{
+    if (!strategy) return;
+    nged::MessageHub::infof("selecting strategy: {}", (*strategy)->get_strategy_id());
+    for (auto& [type, view] : _views)
+    {
+        if (type != "network") continue;
+        auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+        auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
+        assert(strategy);
+        auto strategy_node = agisx_node_factory->createStrategyNode(
+            agisx_graph,
+            *ast_strategy
+        );
+        agisx_graph->set_strategy_node(strategy_node);
+        agisx_graph->add(strategy_node);
+        //agisx_graph->docRoot()->open(ast_strategy->graph_file_path());
+    }
+    nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
+}
 
 //============================================================================
 void
