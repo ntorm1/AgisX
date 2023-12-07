@@ -11,6 +11,7 @@ import AssetNode;
 module AgisXAssetNodeMod;
 import AgisXApp;
 import AgisXExchangeNodeMod;
+import AgisXStrategyNodeMod;
 
 
 namespace AgisX
@@ -38,22 +39,6 @@ AgisXAssetOpNode::acceptInput(nged::sint port, nged::Node const* sourceNode, nge
 }
 
 
-//==================================================================================================
-bool
-AgisXAssetReadNode::acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const
-{
-	if (sourceNode->type() != "ExchangeNode") {
-		nged::MessageHub::errorf("expected ExchangeNode, found {}", sourceNode->type());
-		return false;
-	}
-	auto node = static_cast<AgisXExchangeNode const*>(sourceNode);
-	if (!node->exchange_exists()) {
-		nged::MessageHub::errorf("exchange {} not found", node->exchangeName());
-		return false;
-	}
-	_columns = node->get_columns();
-	return true;
-}
 
 
 //==================================================================================================
@@ -68,45 +53,36 @@ AgisXAssetReadNode::to_agis() const noexcept
 void AgisXAssetReadNode::render_inspector() noexcept
 {
 	static bool first_pass = true;
-	nged::NodePtr exchange_parent = nullptr;
-	nged::sint out_port = 0;
-	if (!getInput(0, exchange_parent, out_port)) {
-		ImGui::Text("no exchange");
+	auto& exchange_node = parent_strategy_node().get_exchange_node();
+
+	ImGui::Text("exchange: %s", exchange_node.exchangeName().c_str());
+	auto& _columns = exchange_node.get_columns();
+	ImGui::Text("column: ");
+	ImGui::SameLine();
+	std::vector<const char*> columnItems;
+	columnItems.reserve(_columns.size());
+	for (const auto& column : _columns) {
+		columnItems.push_back(column.c_str());
 	}
-	else {
-		auto exchange_node = static_cast<AgisXExchangeNode*>(exchange_parent.get());
-		ImGui::Text("exchange: %s", exchange_node->exchangeName().c_str());
-		if (!_columns.size()){
-			ImGui::Text("no columns");
-		}
-		else {
-			ImGui::Text("column: ");
-			ImGui::SameLine();
-			std::vector<const char*> columnItems;
-			columnItems.reserve(_columns.size());
-			for (const auto& column : _columns) {
-				columnItems.push_back(column.c_str());
-			}
-			int current_item = _column;
-			int current_index = _index;
-			ImGui::Combo(
-				"##column",
-				&_column,
-				columnItems.data(),
-				static_cast<int>(columnItems.size())
-			);
+	int current_item = _column;
+	int current_index = _index;
+	ImGui::Combo(
+		"##column",
+		&_column,
+		columnItems.data(),
+		static_cast<int>(columnItems.size())
+	);
 		
-			// make input for index integer, on change check if valid int
-			ImGui::Text("index: ");
-			ImGui::SameLine();
-			ImGui::InputInt("##index", &_index);
-			if (first_pass || _column != current_item || _index != current_index) {
-				setDirty(true);
-				auto n = name();
-				rename(_columns[_column] +" " + std::to_string(_index), n);
-			}
-		}
+	// make input for index integer, on change check if valid int
+	ImGui::Text("index: ");
+	ImGui::SameLine();
+	ImGui::InputInt("##index", &_index);
+	if (first_pass || _column != current_item || _index != current_index) {
+		setDirty(true);
+		auto n = name();
+		rename(_columns[_column] +" " + std::to_string(_index), n);
 	}
+
 	if (first_pass) {
 		first_pass = false;
 	}

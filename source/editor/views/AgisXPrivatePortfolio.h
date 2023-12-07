@@ -20,11 +20,15 @@ public:
 	void draw_portfolio_node(Agis::Portfolio const& portfolio);
 	void draw_new_portfolio();
 	void draw_new_strategy();
-
+	void on_hydra_restore() noexcept
+	{
+		_selected_strategy = std::nullopt;
+		_selected_portfolio = std::nullopt; 
+	}
 private:
 	AgisX::AppState& _app_state;
 
-
+	std::optional<Agis::Strategy*> _selected_strategy = std::nullopt;
 	std::optional<Agis::Portfolio*> _selected_portfolio = std::nullopt;
 };
 

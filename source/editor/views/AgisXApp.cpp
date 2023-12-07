@@ -1,5 +1,6 @@
 module;
 #include <Windows.h>
+#include <fstream>
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <string>
@@ -73,6 +74,7 @@ AppState::AppState()
     if (!std::filesystem::exists(env_path))
     {
         std::filesystem::create_directories(env_path);
+        std::filesystem::create_directories(env_path / "strategies");
     }
     _env_dir = env_path.string();
 }
@@ -262,11 +264,24 @@ AppState::__create_strategy(
         nged::MessageHub::errorf("failed to create strategy: portfolio {} does not exist", portfolio_id);
 		return;
     }
+    // create the .ng graph file if needed 
+    auto env_dir_fs = std::filesystem::path(env_dir());
+    auto strategy_file = env_dir_fs / "strategies" / (strategy_id + ".ng");
+    if (!std::filesystem::exists(strategy_file))
+    {
+        std::ofstream f(strategy_file);
+        if (!f.is_open())
+        {
+            nged::MessageHub::errorf("could not create strategy file");
+        }
+        f.close();
+    }
     auto strategy = std::make_unique<ASTStrategy>(
         strategy_id,
         cash,
         *exchange_opt.value(),
-        *portfolio_opt.value()
+        *portfolio_opt.value(),
+        strategy_file.string()
     );
     auto res = _hydra->register_strategy(std::move(strategy));
     if (!res) 

@@ -13,15 +13,16 @@ using namespace nged;
 namespace AgisX
 {
 
+
 AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
     : Graph(root, parent, name)
 {
-    auto outputNode = this->docRoot()->nodeFactory()->createNode(this, "StrategyNode");
-    set_strategy_node(outputNode.get());
-    root->setDeserializeInplace(false);
-    outputNodeID_ = docRoot()->addItem(outputNode);
-    outputNode->resetID(outputNodeID_);
-    items_.insert(outputNodeID_);
+    //auto outputNode = this->docRoot()->nodeFactory()->createNode(this, "StrategyNode");
+    //set_strategy_node(outputNode.get());
+    //root->setDeserializeInplace(false);
+    //outputNodeID_ = docRoot()->addItem(outputNode);
+   // outputNode->resetID(outputNodeID_);
+    //items_.insert(outputNodeID_);
 }
 
 
@@ -128,5 +129,6 @@ void AgisXGraph::markNodeAndDownstreamDirty(ItemID id)
         }
     }
 }
+
 
 }

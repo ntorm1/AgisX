@@ -15,5 +15,4 @@ using namespace nged;
 namespace AgisX
 {
 
-
 }

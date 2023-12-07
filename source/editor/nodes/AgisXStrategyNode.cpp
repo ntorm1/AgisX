@@ -1,9 +1,10 @@
 module;
 #include "../nged_imgui.h"
-
 #include "AgisXSerialize.h"
 
 module AgisXStrategyNodeMod;
+
+import <filesystem>;
 
 import AgisXApp;
 import StrategyNode;
@@ -93,7 +94,15 @@ void AgisXStrategyNode::render_inspector() noexcept
 				{
 					app().errorf("Strategy {} is not an Agis::ASTStrategy", id);
 				}
-				_strategy = s;
+				auto res = on_strategy_changed();
+				if (res)
+				{
+					_strategy = s;
+				}
+				else
+				{
+					app().errorf("Failed loading strategy: {}", res.error().what());
+				}
 			}
 			if (is_selected)
 			{
@@ -108,6 +117,16 @@ void AgisXStrategyNode::render_inspector() noexcept
 std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> AgisXStrategyNode::to_agis() const noexcept
 {
 	return std::unexpected(Agis::AgisException("not implemented"));
+}
+
+
+//==================================================================================================
+std::expected<bool, Agis::AgisException>
+AgisXStrategyNode::on_strategy_changed() noexcept
+{
+	assert(_strategy);
+	parent()->docRoot()->open(_strategy->graph_file_path());
+	return true;
 }
 
 }

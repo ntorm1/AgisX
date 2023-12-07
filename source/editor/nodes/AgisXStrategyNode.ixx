@@ -18,22 +18,35 @@ namespace AgisX
 export class AgisXStrategyNode 
 	: public AgisXNode<UniquePtr<Agis::AST::StrategyNode>>
 {
+	friend class AgisxNodeFactory;
+
+private:
+	SharedPtr<AgisXExchangeNode> _exchange_node = nullptr;
+	Agis::ASTStrategy& strategy() const noexcept { assert(_strategy);  return *_strategy; }
+	bool has_strategy() const noexcept { return _strategy != nullptr; }
+	Agis::ASTStrategy* _strategy = nullptr;
+
 public:
 	using AgisType = UniquePtr<Agis::AST::StrategyNode>;
-	template<typename... Args>
-	AgisXStrategyNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
+
+	AgisXStrategyNode(nged::Graph* parent,
+		nged::StringView type,
+		nged::StringView name,
+		Agis::ASTStrategy& strategy,
+		int num_inputs) : AgisXNode(parent, type, name, *this, num_inputs)
+	{
+		_exchange_node = std::make_shared<AgisXExchangeNode>(
+			parent, "ExchangeNode", "Exchange", *this, 0, strategy.get_exchange_id()
+		);
+	}
 
 	nged::sint numOutputs() const override { return 0; }
-
 	void render_inspector() noexcept override;
-
+	AgisXExchangeNode const& get_exchange_node() const noexcept { return *_exchange_node.get(); }
 	std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> to_agis() const noexcept override;
 	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
 	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
-
-private:
-	std::optional<Agis::ASTStrategy*> _strategy = std::nullopt;
-
+	std::expected<bool, Agis::AgisException> on_strategy_changed() noexcept;
 };
 
 

@@ -76,6 +76,8 @@ public:
 		nged::MessageHub::errorf(std::forward<T>(args)...);
 	}
 
+	std::string const& env_dir() const noexcept { return _env_dir; }
+
 private:
 	mutable std::shared_mutex _mutex;
 	std::string global_time = "";

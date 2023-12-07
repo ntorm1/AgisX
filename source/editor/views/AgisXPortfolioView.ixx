@@ -42,6 +42,7 @@ public:
     {    
         // unique lock on mutex already aquired by AppState
         _master_portfolio = _app_state.get_portfolio("master").value();
+        _p.on_hydra_restore();
         write_unlock();
     }
 

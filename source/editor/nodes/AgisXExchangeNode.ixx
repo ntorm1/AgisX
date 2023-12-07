@@ -19,24 +19,32 @@ export class AgisXExchangeNode
 public:
 	using AgisType = SharedPtr<Agis::AST::ExchangeNode const>;
 	// template variadic constructor forward to base class
-	template<typename... Args>
-	AgisXExchangeNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
+	AgisXExchangeNode(nged::Graph* parent,
+		nged::StringView type,
+		nged::StringView name,
+		AgisX::AgisXStrategyNode& strategy_node,
+		int num_inputs,
+		std::string exchange_id)
+		: AgisXNode(parent, type, name, strategy_node, num_inputs)
+	{
+		_exchange_name = exchange_id;
+		_columns = copy_columns();
+	}
 
 	nged::sint numOutputs() const override { return 1; }
 	void render_inspector() noexcept override;
-	void on_render_deactivate() noexcept override;
 	bool serialize(nged::Json& json) const override;
 	bool deserialize(nged::Json const& json) override;
 	std::expected<SharedPtr<Agis::AST::ExchangeNode const>, Agis::AgisException> to_agis() const noexcept override;
 
 
 	std::string const& exchangeName() const { return _exchange_name; }
-	bool exchange_exists() const noexcept;
-	std::vector<std::string> get_columns() const noexcept;
+	std::vector<std::string> const& get_columns() const noexcept { return _columns; }
+	std::vector<std::string> copy_columns() const noexcept;
 
 private:
+	std::vector<std::string> _columns;
 	std::string _exchange_name = "";
-
 };
 
 
@@ -56,9 +64,7 @@ public:
 private:
 	Agis::AST::ExchangeQueryType _query_type = Agis::AST::ExchangeQueryType::Default;
 	int _n = -1;
-
 	mutable std::optional<AgisX::AgisXAssetOpNode const*> _asset_input = std::nullopt;
-	mutable std::optional<AgisX::AgisXExchangeNode const*> _exchange = std::nullopt;
 };
 
 
