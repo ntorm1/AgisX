@@ -31,7 +31,6 @@ private:
 protected:
 	virtual std::expected<AgisType, Agis::AgisException> to_agis() const noexcept = 0;
 	AgisX::AppState const& app() const { return *_instance; }
-
 	AgisX::AgisXStrategyNode const& parent_strategy_node() const noexcept { return _strategy_node; }
 
 public:

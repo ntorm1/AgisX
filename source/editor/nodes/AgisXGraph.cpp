@@ -14,15 +14,26 @@ namespace AgisX
 {
 
 
-AgisXGraph::AgisXGraph(NodeGraphDoc* root, Graph* parent, String name)
+AgisXGraph::AgisXGraph(
+    NodeGraphDoc* root,
+    Graph* parent,
+    String name,
+    std::optional<NodePtr> outputNode)
     : Graph(root, parent, name)
 {
-    //auto outputNode = this->docRoot()->nodeFactory()->createNode(this, "StrategyNode");
-    //set_strategy_node(outputNode.get());
-    //root->setDeserializeInplace(false);
-    //outputNodeID_ = docRoot()->addItem(outputNode);
-   // outputNode->resetID(outputNodeID_);
-    //items_.insert(outputNodeID_);
+    if (!outputNode)
+    {
+        nged::msghub::error("strategy is null");
+        return;
+    }
+    nged::msghub::info("building new AgisXGraph");
+    root->setDeserializeInplace(false);
+    set_strategy_node((*outputNode).get());
+    (*outputNode)->setParent(this);
+    outputNodeID_ = docRoot()->addItem(*outputNode);
+    (*outputNode)->resetID(outputNodeID_);
+    items_.insert(outputNodeID_);
+    nged::msghub::info("AgisXGraph build complete");
 }
 
 
@@ -69,6 +80,7 @@ AgisXGraph::remove(HashSet<ItemID> const& items)
     Graph::remove(itemsToRemove);
 }
 
+
 //==================================================================================================
 ItemID
 AgisXGraph::add(GraphItemPtr item)
@@ -77,6 +89,7 @@ AgisXGraph::add(GraphItemPtr item)
         return item->id();
     return Graph::add(item);
 }
+
 
 
 //==================================================================================================

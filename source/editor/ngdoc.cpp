@@ -1823,7 +1823,7 @@ namespace nged {
 
     StringView NodeGraphDoc::title() const { return title_; }
 
-    bool NodeGraphDoc::open(String path)
+    bool NodeGraphDoc::open(String path, std::optional<NodePtr> output)
         try {
         std::ifstream infile(path);
         if (!infile.good()) {
@@ -1831,15 +1831,19 @@ namespace nged {
             return false;
         }
 
-        auto content = filterFileInput(String{ std::istreambuf_iterator<char>(infile), {} });
-        Json injson = Json::parse(content);
 
-        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this));
-        if (!newgraph->deserialize(injson["root"])) {
-            msghub::errorf("failed to deserialize content from {}", path);
-            return false;
+
+        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this, output));
+        auto content = filterFileInput(String{ std::istreambuf_iterator<char>(infile), {} });
+        if (!content.empty()){
+            Json injson = Json::parse(content);
+            if (!newgraph->deserialize(injson["root"]))
+            {
+                msghub::errorf("failed to deserialize content from {}", path);
+                return false;
+            }
         }
-        // TODO: update viewers
+        // TODO: update viewers. As of now views are uupdate by the app state.
         root_ = newgraph;
         savePath_ = path;
         title_ = std::filesystem::path(savePath_).stem().string();
@@ -1860,14 +1864,18 @@ namespace nged {
             msghub::errorf("document {} is read-only, cannot save", savePath_);
             return false;
         }
-        if (saveTo(savePath_)) {
-            history_.markSaved();
-            dirty_ = false;
-            return true;
-        }
-        else {
+        if (!saveTo(savePath_)) {
             return false;
         }
+        history_.markSaved();
+        dirty_ = false;
+        msghub::infof("document saved to: {}", savePath_);
+        for (auto& id : root_->items())
+        {
+            auto item = root_->get(id);
+            item->onSave();
+        }
+        return true;
     }
 
     bool NodeGraphDoc::saveAs(String path)

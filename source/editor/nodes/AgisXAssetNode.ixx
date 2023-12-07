@@ -21,6 +21,7 @@ public:
 	template<typename... Args>
 	AgisXAssetReadNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) {}
 	nged::sint numOutputs() const override { return 1; }
+	nged::sint numMaxInputs() const override { return 0; }
 
 	auto const& column() const { return _column; }
 	int getIndex() const { return _index; }

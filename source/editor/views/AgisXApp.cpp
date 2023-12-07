@@ -255,6 +255,11 @@ AppState::__create_strategy(
     std::string const& exchange_id,
     double cash)
 {
+    if (_hydra->get_state() != HydraState::BUILT)
+    {
+        nged::MessageHub::errorf("Hydra must be in build state for new strategy");
+        return;
+    }
     auto exchange_opt  = _hydra->get_exchange_mut(exchange_id);
     auto portfolio_opt = _hydra->get_portfolio_mut(portfolio_id);
     if (!exchange_opt)
@@ -359,6 +364,8 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
 {
     if (!strategy) return;
     nged::MessageHub::infof("selecting strategy: {}", (*strategy)->get_strategy_id());
+    
+    nged::GraphPtr graph = nullptr;
     for (auto& [type, view] : _views)
     {
         if (type != "network") continue;
@@ -370,9 +377,16 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
             agisx_graph,
             *ast_strategy
         );
-        agisx_graph->set_strategy_node(strategy_node);
-        agisx_graph->add(strategy_node);
-        //agisx_graph->docRoot()->open(ast_strategy->graph_file_path());
+        agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
+        graph = agisx_graph->docRoot()->root();
+    }
+    assert(graph);
+    // update the new graph pointer for each view
+    for (auto& [type, view] : _views)
+    {
+        // create weak pointer from the shared graph pointer
+        auto weak_graph = std::weak_ptr<nged::Graph>(graph);
+        view->reset(weak_graph);
     }
     nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
 }
