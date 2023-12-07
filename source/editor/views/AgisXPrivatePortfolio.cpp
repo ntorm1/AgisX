@@ -23,6 +23,38 @@ AgisXPortfolioViewPrivate::~AgisXPortfolioViewPrivate()
 
 //============================================================================
 void
+AgisXPortfolioViewPrivate::on_portfolio_click(const Agis::Portfolio& portfolio)
+{
+    if (_selected_portfolio && *_selected_portfolio == &portfolio) {
+        _app_state.infof("deselected portfolio: {}", portfolio.get_portfolio_id());
+        _selected_portfolio = std::nullopt;
+    }
+    else {
+        _app_state.infof("selected portfolio: {}", portfolio.get_portfolio_id());
+        _selected_strategy = std::nullopt;
+        _selected_portfolio = const_cast<Agis::Portfolio*>(&portfolio);
+    }
+}
+
+
+//============================================================================
+void
+AgisXPortfolioViewPrivate::on_strategy_click(const Agis::Strategy& strategy)
+{
+    if (_selected_strategy && *_selected_strategy == &strategy) {
+        _app_state.infof("deselected strategy: {}", strategy.get_strategy_id());
+        _selected_strategy = std::nullopt;
+    }
+    else {
+        _app_state.infof("selected strategy: {}", strategy.get_strategy_id());
+        _selected_portfolio = std::nullopt;
+        _selected_strategy = const_cast<Agis::Strategy*>(&strategy);
+    }
+    _app_state.emit_on_strategy_select(_selected_strategy);
+}
+
+//============================================================================
+void
 AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
 {
     auto id = portfolio.get_portfolio_id();
@@ -38,28 +70,21 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     {
         node_flags |= ImGuiTreeNodeFlags_Selected;
     }
-    if (ImGui::TreeNodeEx(id.c_str(), node_flags, id.c_str())) {
-        if (ImGui::IsItemClicked())
-        {
-            if (_selected_portfolio && *_selected_portfolio == &portfolio)
-            {
-                _app_state.infof("deselected portfolio: {}", id);
-				_selected_portfolio = std::nullopt;
-			}
-            else
-            {
-                _app_state.infof("selected portfolio: {}", id);
-                _selected_strategy = std::nullopt;
-				_selected_portfolio = const_cast<Agis::Portfolio*>(&portfolio);
-			}
-        }
-        auto& child_portfolios = portfolio.child_portfolios();
-        // Check for right-click within the TreeNode
+    bool is_node_open = ImGui::TreeNodeEx(id.c_str(), node_flags, id.c_str());
+    node_flags = base_flags;
+    if (ImGui::IsItemClicked()) {
+        on_portfolio_click(portfolio);
+    }
+    // Check for right-click within the TreeNode
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+        ImGui::OpenPopupOnItemClick("PortfolioContextMenu", ImGuiPopupFlags_MouseButtonRight);
+    }
+    if (is_node_open) {
         if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-            ImGui::OpenPopupOnItemClick("PortfolioContextMenu", ImGuiPopupFlags_MouseButtonRight);
+             ImGui::OpenPopupOnItemClick("PortfolioContextMenu", ImGuiPopupFlags_MouseButtonRight);
         }
         // draw the child portfolios
-        for (auto& [index, child_portfolio] : child_portfolios)
+        for (auto& [index, child_portfolio] : portfolio.child_portfolios())
         {
             draw_portfolio_node(*child_portfolio);
         }
@@ -75,21 +100,12 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
                 node_flags |= ImGuiTreeNodeFlags_Selected;
             }
             ImGui::PushID(id.c_str());
-            if(ImGui::TreeNodeEx(strategy_id.c_str(), node_flags, strategy_id.c_str()))
+            is_node_open = ImGui::TreeNodeEx(strategy_id.c_str(), node_flags, strategy_id.c_str());
+            if (is_node_open)
             {
                 if (ImGui::IsItemClicked())
                 {
-                    if (_selected_strategy && *_selected_strategy == child_Strategy.get())
-                    {
-                        _app_state.infof("deselected strategy: {}", strategy_id);
-                        _selected_strategy = std::nullopt;
-                    }
-                    else
-                    {
-                        _app_state.infof("selected strategy: {}", strategy_id);
-                        _selected_portfolio = std::nullopt;
-                        _selected_strategy = const_cast<Agis::Strategy*>(child_Strategy.get());
-                    }
+                    on_strategy_click(*child_Strategy);
                 }
                 ImGui::TreePop();
             }
@@ -104,12 +120,6 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     static bool open_new_strategy_popup = false;
     if (ImGui::BeginPopupContextItem("PortfolioContextMenu"))
     {
-        // set the selected portfolio if not set 
-        if (!_selected_portfolio)
-		{
-			// get pointer to the portfolio, remove const qualifier
-            _selected_portfolio = const_cast<Agis::Portfolio*>(&portfolio);
-		}
 
         if (ImGui::MenuItem("New Portfolio"))
         {
@@ -123,13 +133,27 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     }
     if (open_new_portfolio_popup)
     {
-        ImGui::OpenPopup("NewPortfolioPopup");
-        open_new_portfolio_popup = false;
+        if (!_selected_portfolio)
+        {
+            _app_state.errorf("No portfolio selected");
+        }
+        else
+        {
+            ImGui::OpenPopup("NewPortfolioPopup");
+            open_new_portfolio_popup = false;
+        }
     }
     else if (open_new_strategy_popup)
-	{
-		ImGui::OpenPopup("NewStrategyPopup");
-		open_new_strategy_popup = false;
+    {
+        if (!_selected_portfolio)
+        {
+            _app_state.errorf("No portfolio selected");
+        }
+        else
+        {
+            ImGui::OpenPopup("NewStrategyPopup");
+            open_new_strategy_popup = false;
+        }
 	}
 }
 

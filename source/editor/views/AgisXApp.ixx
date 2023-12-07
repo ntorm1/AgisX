@@ -38,7 +38,6 @@ public:
 		std::string const& exchange_id,
 		double cash
 	);
-
 	void __create_exchange(
 		std::string const& id,
 		std::string const& dt_format,
@@ -54,6 +53,7 @@ public:
 	void add_view(std::string const& name, nged::GraphViewPtr view) { WRITE_LOCK _views[name] = view; }
 	//void update_time(long long global_time, long long next_global_time);
 
+	void emit_on_strategy_select(std::optional<Agis::Strategy*> strategy);
 	void emit_on_hydra_restore();
 	void emit_lock(bool lock = true);
 

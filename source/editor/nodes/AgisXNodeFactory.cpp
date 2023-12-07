@@ -48,13 +48,13 @@ nged::NodePtr
 AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
 {
     // verify strategy node. 
-    auto graph = dynamic_cast<AgisXGraph*>(parent);
-    auto base_strategy_ptr = dynamic_cast<AgisXStrategyNode const*>(graph->strategy_node());
-    if (!base_strategy_ptr || !base_strategy_ptr->has_strategy())
+    if (!strategy_node_set)
     {
         nged::MessageHub::error("Strategy node is not set");
         return nullptr;
     }
+    auto graph = dynamic_cast<AgisXGraph*>(parent);
+    auto base_strategy_ptr = dynamic_cast<AgisXStrategyNode const*>(graph->strategy_node().get());
     auto& base_strategy = *const_cast<AgisXStrategyNode*>(base_strategy_ptr);
 
     if (type == "AssetReadNode")
@@ -70,7 +70,21 @@ AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
     }
 }
 
-void AgisxNodeFactory::listNodeTypes(
+
+//==================================================================================================
+nged::NodePtr
+AgisxNodeFactory::createStrategyNode(nged::Graph* parent, Agis::ASTStrategy& strategy) const
+{
+    strategy_node_set = true;
+    return std::make_shared<AgisXStrategyNode>(
+        parent, "StrategyNode", "Strategy", strategy, 0
+    );
+}
+
+
+//==================================================================================================
+void
+AgisxNodeFactory::listNodeTypes(
     Graph* graph,
     void* context,
     void(*ret)(void* context, nged::StringView category, nged::StringView type, nged::StringView name)) const

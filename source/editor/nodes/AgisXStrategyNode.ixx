@@ -22,9 +22,8 @@ export class AgisXStrategyNode
 
 private:
 	SharedPtr<AgisXExchangeNode> _exchange_node = nullptr;
-	Agis::ASTStrategy& strategy() const noexcept { assert(_strategy);  return *_strategy; }
-	bool has_strategy() const noexcept { return _strategy != nullptr; }
-	Agis::ASTStrategy* _strategy = nullptr;
+	Agis::ASTStrategy const& strategy() const noexcept { return _strategy; }
+	Agis::ASTStrategy& _strategy;
 
 public:
 	using AgisType = UniquePtr<Agis::AST::StrategyNode>;
@@ -33,7 +32,9 @@ public:
 		nged::StringView type,
 		nged::StringView name,
 		Agis::ASTStrategy& strategy,
-		int num_inputs) : AgisXNode(parent, type, name, *this, num_inputs)
+		int num_inputs) : 
+		AgisXNode(parent, type, name, *this, num_inputs), 
+		_strategy(strategy)
 	{
 		_exchange_node = std::make_shared<AgisXExchangeNode>(
 			parent, "ExchangeNode", "Exchange", *this, 0, strategy.get_exchange_id()
@@ -46,6 +47,7 @@ public:
 	std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> to_agis() const noexcept override;
 	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
 	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
+	std::string const& graph_file_path() const noexcept { return strategy().graph_file_path(); }
 	std::expected<bool, Agis::AgisException> on_strategy_changed() noexcept;
 };
 

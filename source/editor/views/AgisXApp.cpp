@@ -16,6 +16,9 @@ import ExchangeMapModule;
 import ASTStrategyModule;
 import AgisTimeUtils;
 
+import AgisXNodeFactory;
+import AgisXGraph;
+
 using namespace Agis;
 
 namespace AgisX
@@ -348,6 +351,31 @@ AppState::__create_portfolio(
 	nged::MessageHub::infof("created portfolio: {}", id);
 }
 
+
+
+//============================================================================
+void
+AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
+{
+    if (!strategy) return;
+    nged::MessageHub::infof("selecting strategy: {}", (*strategy)->get_strategy_id());
+    for (auto& [type, view] : _views)
+    {
+        if (type != "network") continue;
+        auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+        auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
+        assert(strategy);
+        auto strategy_node = agisx_node_factory->createStrategyNode(
+            agisx_graph,
+            *ast_strategy
+        );
+        agisx_graph->set_strategy_node(strategy_node);
+        agisx_graph->add(strategy_node);
+        //agisx_graph->docRoot()->open(ast_strategy->graph_file_path());
+    }
+    nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
+}
 
 //============================================================================
 void

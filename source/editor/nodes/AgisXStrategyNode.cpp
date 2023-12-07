@@ -75,42 +75,11 @@ bool AgisXAllocationNode::serialize(nged::Json& json) const
 }
 
 
-void AgisXStrategyNode::render_inspector() noexcept
+//==================================================================================================
+void
+AgisXStrategyNode::render_inspector() noexcept
 {
-	static std::string strategy_id;
-	ImGui::Text("Strategy ID: ");
-	ImGui::SameLine();
-	auto& strategies = app().get_strategies();
-	if (ImGui::BeginCombo("##StrategyID", strategy_id.c_str()))
-	{
-		for (auto& [id, strategy] : strategies)
-		{
-			bool is_selected = (strategy_id == id);
-			if (ImGui::Selectable(id.c_str(), is_selected))
-			{
-				strategy_id = id;
-				Agis::ASTStrategy* s = dynamic_cast<Agis::ASTStrategy*>(strategy);
-				if (!s)
-				{
-					app().errorf("Strategy {} is not an Agis::ASTStrategy", id);
-				}
-				auto res = on_strategy_changed();
-				if (res)
-				{
-					_strategy = s;
-				}
-				else
-				{
-					app().errorf("Failed loading strategy: {}", res.error().what());
-				}
-			}
-			if (is_selected)
-			{
-				ImGui::SetItemDefaultFocus();
-			}
-		}
-		ImGui::EndCombo();
-	}
+	ImGui::Text("Strategy ID: %s", strategy().get_strategy_id().c_str());
 }
 
 //==================================================================================================
@@ -124,8 +93,7 @@ std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> AgisXStra
 std::expected<bool, Agis::AgisException>
 AgisXStrategyNode::on_strategy_changed() noexcept
 {
-	assert(_strategy);
-	parent()->docRoot()->open(_strategy->graph_file_path());
+	parent()->docRoot()->open(strategy().graph_file_path());
 	return true;
 }
 
