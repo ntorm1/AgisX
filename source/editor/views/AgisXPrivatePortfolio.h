@@ -18,8 +18,10 @@ public:
 
 	void draw_portfolio_tree(Agis::Portfolio const& portfolio);
 	void draw_portfolio_node(Agis::Portfolio const& portfolio);
+	void draw_strategy();
 	void draw_new_portfolio();
 	void draw_new_strategy();
+	void draw_book(Agis::Portfolio const& portfolio);
 
 	void on_portfolio_click(Agis::Portfolio const& portfolio);
 	void on_strategy_click(Agis::Strategy const& strategy);

@@ -116,7 +116,10 @@ AgisXAssetViewPrivate::asset_table_context_menu()
                 ImGui::CloseCurrentPopup();
             }
             if (ImGui::Button("Close"))
+            {
+                _plot_view.remove_data(_columns[i-1]);
                 ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         }
         ImGui::PopID();
@@ -175,7 +178,7 @@ void AgisXAssetViewPrivate::draw_table()
 
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%s", _dt_index[row].c_str());
-                for (int column = 0; column < table_columns.size(); column++)
+                for (size_t column = 0; column < table_columns.size(); column++)
                 {
                     // get index into row major data array and render
                     ImGui::TableSetColumnIndex(column + 1);
@@ -248,6 +251,15 @@ AgisXPlotViewPrivate::add_data(std::string const& column, std::vector<double>& d
 {
     if(!data.size()) return;
     _data.insert({ column, data });
+}
+
+
+//============================================================================
+void
+AgisXPlotViewPrivate::remove_data(std::string const& column)
+{
+    if (!_data.count(column)) return;
+    _data.erase(column);
 }
 
 

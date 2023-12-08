@@ -19,7 +19,10 @@ public:
 	using AgisType = UniquePtr<Agis::AST::AssetLambdaNode>;
 
 	template<typename... Args>
-	AgisXAssetReadNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) {}
+	AgisXAssetReadNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) 
+	{
+		setColor(gmath::hexCodeToSRGB(Color::YELLOW_HEXCODE));
+	}
 	nged::sint numOutputs() const override { return 1; }
 	nged::sint numMaxInputs() const override { return 0; }
 

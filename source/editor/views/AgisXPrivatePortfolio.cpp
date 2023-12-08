@@ -8,6 +8,9 @@ import <optional>;
 
 import PortfolioModule;
 import StrategyModule;
+import PositionModule;
+import ExchangeMapModule;
+import TradeModule;
 import AgisXApp;
 
 namespace AgisX
@@ -93,13 +96,20 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
         for (auto& [index, child_Strategy] : portfolio.child_strategies())
         {
             auto const& strategy_id = child_Strategy->get_strategy_id();
+            ImU32 circleColor = child_Strategy->is_disabled() ? IM_COL32(255, 0, 0, 255) : IM_COL32(0, 255, 0, 255);
             if (
                 _selected_strategy &&
                 *_selected_strategy == child_Strategy.get())
             {
                 node_flags |= ImGuiTreeNodeFlags_Selected;
             }
-            ImGui::PushID(id.c_str());
+            ImGui::PushID(strategy_id.c_str());
+
+            // Add a circle with a color based on the boolean value in the strategy
+            ImVec2 circlePos = ImGui::GetCursorScreenPos();
+            ImVec2 circleCenter = ImVec2(circlePos.x + 22, circlePos.y + 10); // Adjust the position as needed
+            float circleRadius = 5.0f;
+            ImGui::GetWindowDrawList()->AddCircleFilled(circleCenter, circleRadius, circleColor);
             is_node_open = ImGui::TreeNodeEx(strategy_id.c_str(), node_flags, strategy_id.c_str());
             if (is_node_open)
             {
@@ -155,6 +165,35 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
             open_new_strategy_popup = false;
         }
 	}
+}
+
+
+//============================================================================
+void AgisXPortfolioViewPrivate::draw_strategy()
+{
+    if (!_selected_strategy)
+    {
+		return;
+	}
+    auto& strategy = *(_selected_strategy.value());
+    ImGui::Text("Strategy ID: %s", strategy.get_strategy_id().c_str());
+    ImGui::Text("Exchange ID: %s", strategy.get_exchange_id().c_str());
+    ImGui::Text("Portfolio ID: %s", strategy.get_portfolio_id().c_str());
+    ImGui::Separator();
+
+    ImGui::Text("Cash: %f", strategy.get_cash());
+    ImGui::Text("Net Liquidation Value: %f", strategy.get_nlv());
+    ImGui::Separator();
+
+    if (ImGui::Button("Disable"))
+    {
+		strategy.set_is_disabled(true);
+	}
+    ImGui::SameLine();
+    if (ImGui::Button("Enable"))
+    {
+        strategy.set_is_disabled(false);
+    }
 }
 
 
@@ -275,15 +314,100 @@ AgisXPortfolioViewPrivate::draw_new_strategy()
 
 //============================================================================
 void
+AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
+{
+    auto const& positions = portfolio.positions();
+    auto const& exchange_map = _app_state.get_exchanges();
+
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
+    static int decimalPlaces = 2;
+    //static ImGuiTreeNodeFlags tree_node_flags = flags;
+
+        // Add a counter to toggle the number of decimal places
+    if (ImGui::CollapsingHeader("Portfolio Book Layout"))
+    {
+        ImGui::Text("Decimal Places: %d", decimalPlaces);
+        if (ImGui::Button("Decrease") && decimalPlaces > 0)
+            decimalPlaces--;
+        ImGui::SameLine();
+        if (ImGui::Button("Increase") && decimalPlaces < 12)
+            decimalPlaces++;
+    }
+
+    if (ImGui::BeginTable("PortfolioBook", 6, flags))
+    {
+        // The first column will use the default _WidthStretch when ScrollX is Off and _WidthFixed when ScrollX is On
+        ImGui::TableSetupColumn("Asset ID", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableSetupColumn("Strategy ID", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableSetupColumn("Average Cost");
+        ImGui::TableSetupColumn("NLV");
+        ImGui::TableSetupColumn("Unrealized PnL");
+        ImGui::TableSetupColumn("Realized PnL");
+        ImGui::TableHeadersRow();
+
+        for (auto const& [asset_index, position] : positions)
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            auto asset_id = exchange_map.get_asset_id(asset_index).value();
+            bool open = ImGui::TreeNodeEx(asset_id.c_str(), flags);
+            ImGui::TableNextColumn();
+            ImGui::TextDisabled("--");
+            ImGui::TableNextColumn();
+            ImGui::Text("%.*f", decimalPlaces, position->get_avg_price());
+            ImGui::TableNextColumn();
+            ImGui::Text("%.*f", decimalPlaces, position->get_nlv());
+            ImGui::TableNextColumn();
+            ImGui::Text("%.*f", decimalPlaces, position->get_unrealized_pnl());
+            ImGui::TableNextColumn();
+            ImGui::Text("%.*f", decimalPlaces, position->get_realized_pnl());
+
+            if (open)
+            {
+                auto const& trades = position->trades();
+                for (auto const& [trade_id, trade] : trades)
+                {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(trade->get_strategy()->get_strategy_id().c_str());
+                    ImGui::TableNextColumn();
+					ImGui::Text("%.*f", decimalPlaces, trade->get_avg_price());
+					ImGui::TableNextColumn();
+					ImGui::Text("%.*f", decimalPlaces, trade->get_nlv());
+					ImGui::TableNextColumn();
+					ImGui::Text("%.*f", decimalPlaces, trade->get_unrealized_pnl());
+					ImGui::TableNextColumn();
+					ImGui::Text("%.*f", decimalPlaces, trade->get_realized_pnl());
+				}   
+            }
+            ImGui::TreePop();
+        }
+    }
+    ImGui::EndTable();
+}
+
+
+//============================================================================
+void
 AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
 {
 	// draw popups if needed
     draw_new_portfolio();
     draw_new_strategy();
 
-    if (ImGui::CollapsingHeader("Portfolios"))
+    if (ImGui::CollapsingHeader("Portfolio Tree"))
     {
         draw_portfolio_node(portfolio);
+    }
+    if (ImGui::CollapsingHeader("Strategy"))
+    {
+        draw_strategy();
+    }
+    if (ImGui::CollapsingHeader("Portfolio Book"))
+    {
+        draw_book(portfolio);
     }
 }
 

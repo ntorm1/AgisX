@@ -153,6 +153,7 @@
     <ClCompile Include="source\app\App.cpp" />
     <ClCompile Include="source\app\App.h" />
     <ClCompile Include="source\editor\editor.cpp" />
+    <ClCompile Include="source\editor\gmath.cpp" />
     <ClCompile Include="source\editor\ngdoc.cpp" />
     <ClCompile Include="source\editor\ngdraw.cpp" />
     <ClCompile Include="source\editor\nged.cpp" />

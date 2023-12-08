@@ -21,6 +21,7 @@ public:
 
 	std::optional<Agis::Portfolio*> get_portfolio_mut(std::string const& id) const noexcept;
 	std::optional<Agis::Portfolio const*> get_portfolio(std::string const& id) const noexcept;
+	Agis::ExchangeMap const& get_exchanges() const noexcept;
 	std::optional<Agis::Exchange const*> get_exchange(std::string const& id) const noexcept;
 	std::unordered_map<std::string, size_t> const* get_exchange_ids() const noexcept;
 	std::unordered_map<std::string, size_t> const* get_portfolio_ids() const noexcept;
@@ -51,8 +52,6 @@ public:
 	) noexcept;
 
 	void add_view(std::string const& name, nged::GraphViewPtr view) { WRITE_LOCK _views[name] = view; }
-	//void update_time(long long global_time, long long next_global_time);
-
 	void emit_on_strategy_select(std::optional<Agis::Strategy*> strategy);
 	void emit_on_hydra_restore();
 	void emit_lock(bool lock = true);
@@ -79,6 +78,9 @@ public:
 	std::string const& env_dir() const noexcept { return _env_dir; }
 
 private:
+	std::optional<nged::GraphViewPtr> get_network_view();
+	void __load_strategies_from_disk() noexcept;
+
 	mutable std::shared_mutex _mutex;
 	std::string global_time = "";
 	std::string next_global_time = "";

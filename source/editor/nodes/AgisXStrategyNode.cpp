@@ -44,7 +44,15 @@ bool AgisXAllocationNode::acceptInput(nged::sint port, Node const* sourceNode, n
 std::expected<UniquePtr<Agis::AST::AllocationNode>, Agis::AgisException>
 AgisXAllocationNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	if (!_ev_input)
+	{
+		return std::unexpected(Agis::AgisException("alloc node missing ev input"));
+	}
+	AGIS_ASSIGN_OR_RETURN(ev_input, (*_ev_input)->to_agis());
+	return std::make_unique<Agis::AST::AllocationNode>(
+		std::move(ev_input),
+		_alloc_type
+	);
 }
 
 
@@ -86,6 +94,10 @@ bool AgisXStrategyNode::onSave() noexcept
 	{
 		app().errorf("failed to rebuild AST strategy: {}", res.error().what());
 	}
+	else
+	{
+		app().infof("rebuild AST strategy: {} successful", strategy().get_strategy_id());
+	}	
 	return true;
 }
 

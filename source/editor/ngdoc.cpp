@@ -1830,9 +1830,6 @@ namespace nged {
             msghub::errorf("failed to open \"{}\"", path);
             return false;
         }
-
-
-
         auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this, output));
         auto content = filterFileInput(String{ std::istreambuf_iterator<char>(infile), {} });
         if (!content.empty()){

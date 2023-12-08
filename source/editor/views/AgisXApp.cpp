@@ -19,7 +19,6 @@ import AgisTimeUtils;
 import AgisXNodeFactory;
 import AgisXGraph;
 
-using namespace Agis;
 
 namespace AgisX
 {
@@ -58,7 +57,7 @@ std::string formatDuration(const std::chrono::high_resolution_clock::time_point&
 //============================================================================
 AppState::AppState()
 {
-    _hydra = std::make_unique<Hydra>();
+    _hydra = std::make_unique<Agis::Hydra>();
 
     // set the exe path
     wchar_t buffer[MAX_PATH]; // Use wchar_t instead of char
@@ -102,6 +101,15 @@ AppState::get_portfolio(std::string const& id) const noexcept
 {
    return _hydra->get_portfolio(id);
 }
+
+
+//============================================================================
+Agis::ExchangeMap const&
+AppState::get_exchanges() const noexcept
+{
+    return _hydra->get_exchanges();
+}
+
 
 //============================================================================
 std::optional<Agis::Exchange const*>
@@ -158,25 +166,103 @@ AppState::__save_state() const noexcept
 
 
 //============================================================================
+std::optional<nged::GraphViewPtr>
+AppState::get_network_view()
+{
+    for (auto& [type, view] : _views)
+    {
+		if (type == "network") return view;
+	}
+    return std::nullopt;
+}
+
+
+//============================================================================
+void
+AppState::__load_strategies_from_disk() noexcept
+{
+    // find all files in the strategies directory
+    auto strategy_dir = _env_dir + "/strategies";
+    std::vector<std::string> ng_files;
+    for (const auto& entry : std::filesystem::directory_iterator(strategy_dir))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".ng")
+        {
+            ng_files.push_back(entry.path().string());
+        }
+    }
+    auto view = get_network_view().value();
+    auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+    auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+    bool loaded_successfully = true;
+    for (const auto& file : ng_files)
+    {
+        // get the file name 
+        auto file_path = std::filesystem::path(file);
+        auto file_name = file_path.stem().string();
+        nged::MessageHub::infof("Loading strategy: {}", file_name);
+        auto strategy_opt = _hydra->get_strategy_mut(file_name);
+        if (!strategy_opt)
+        {
+			nged::MessageHub::errorf("failed to get strategy: {}", file_name);
+            loaded_successfully = false;
+			continue;
+		}
+        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy_opt);
+        if (!ast_strategy)
+        {
+			nged::MessageHub::errorf("failed to cast strategy to AST type: {}", file_name);
+			loaded_successfully = false;
+            continue;
+		}
+        auto strategy_node = agisx_node_factory->createStrategyNode(
+            agisx_graph,
+            *ast_strategy
+        );
+        // load in .ng graph file and create the AST Strategy graph
+        agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
+        strategy_node->onSave();
+    }
+    agisx_graph->clear();
+    auto graph = agisx_graph->docRoot()->root();
+    // update the new graph pointer for each view
+    for (auto& [type, view] : _views)
+    {
+        // create weak pointer from the shared graph pointer
+        auto weak_graph = std::weak_ptr<nged::Graph>(graph);
+        view->reset(weak_graph);
+    }
+    if (loaded_successfully)
+    {
+        nged::MessageHub::infof("loaded {} strategies", ng_files.size());
+    }
+    else
+    {
+        nged::MessageHub::errorf("failed to load strategies");
+    }
+}
+
+//============================================================================
 void
 AppState::__load_state() noexcept
 {
     std::thread load_thread([this] {
         nged::MessageHub::infof("loading state from: {}", _env_dir);
         auto now = std::chrono::system_clock::now();
-        auto res = deserialize_hydra(_env_dir + "/hydra.json");
+        auto res = Agis::deserialize_hydra(_env_dir + "/hydra.json");
         if (res)
         {
             emit_lock(true);
             _hydra = std::move(res.value());
+            __load_strategies_from_disk();
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
             emit_on_hydra_restore();
-            nged::MessageHub::infof("Hydra loaded successfully in {} ms", std::to_string(elapsed.count()));
+            nged::MessageHub::infof("Hydra loaded in {} ms", std::to_string(elapsed.count()));
         }
         else
         {
-            nged::MessageHub::errorf("failed to save state: {}", res.error().what());
+            nged::MessageHub::errorf("failed to load state: {}", res.error().what());
         }
     });
     load_thread.detach();
@@ -189,7 +275,7 @@ AppState::__build() noexcept
 {
     std::thread build_thread([this] {
         nged::MessageHub::info("building hydra");
-        if (_hydra->get_state() != HydraState::INIT)
+        if (_hydra->get_state() != Agis::HydraState::INIT)
         {
             nged::MessageHub::error("Hydra has already been built");
             return;
@@ -215,7 +301,7 @@ AppState::__step() noexcept
     auto lock = _hydra->__aquire_write_lock();
     std::thread step_thread([this] {
         nged::MessageHub::debugf("Starting step, current time: {}", get_global_time());
-        if (_hydra->get_state() != HydraState::BUILT && _hydra->get_state() != HydraState::RUN)
+        if (_hydra->get_state() != Agis::HydraState::BUILT && _hydra->get_state() != Agis::HydraState::RUN)
         {
             nged::MessageHub::error("Hydra is not built or running");
             return;
@@ -255,7 +341,7 @@ AppState::__create_strategy(
     std::string const& exchange_id,
     double cash)
 {
-    if (_hydra->get_state() != HydraState::BUILT)
+    if (_hydra->get_state() != Agis::HydraState::BUILT)
     {
         nged::MessageHub::errorf("Hydra must be in build state for new strategy");
         return;
@@ -284,7 +370,7 @@ AppState::__create_strategy(
         }
         f.close();
     }
-    auto strategy = std::make_unique<ASTStrategy>(
+    auto strategy = std::make_unique<Agis::ASTStrategy>(
         strategy_id,
         cash,
         *exchange_opt.value(),
@@ -342,7 +428,7 @@ AppState::__create_portfolio(
     std::optional<Agis::Portfolio*> parent
 ) noexcept
 {
-    if (_hydra->get_state() != HydraState::BUILT)
+    if (_hydra->get_state() != Agis::HydraState::BUILT)
     {
         nged::MessageHub::error("Hydra is not built");
 		return;
@@ -365,22 +451,18 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
     if (!strategy) return;
     nged::MessageHub::infof("selecting strategy: {}", (*strategy)->get_strategy_id());
     
-    nged::GraphPtr graph = nullptr;
-    for (auto& [type, view] : _views)
-    {
-        if (type != "network") continue;
-        auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
-        auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
-        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
-        assert(strategy);
-        auto strategy_node = agisx_node_factory->createStrategyNode(
-            agisx_graph,
-            *ast_strategy
-        );
-        agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
-        graph = agisx_graph->docRoot()->root();
-    }
-    assert(graph);
+    auto view =  get_network_view().value();
+    auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+    auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+    auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
+    assert(strategy);
+    auto strategy_node = agisx_node_factory->createStrategyNode(
+        agisx_graph,
+        *ast_strategy
+    );
+    agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
+    auto graph = agisx_graph->docRoot()->root();
+    
     // update the new graph pointer for each view
     for (auto& [type, view] : _views)
     {

@@ -56,6 +56,7 @@ public:
 	AgisXExchangeViewNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
 
 	std::expected<UniquePtr<Agis::AST::ExchangeViewSortNode>, Agis::AgisException> to_agis() const noexcept override;
+	nged::sint numMaxInputs() const override { return 1; }
 	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	virtual void render_inspector() noexcept override;
 	bool deserialize(nged::Json const& json) override;

@@ -21,6 +21,8 @@ struct AgisXPlotViewPrivate
 		std::string const& column,
 		std::vector<double>& data
 	);
+	void remove_data(std::string const& column);
+
 	void reset();
 	Agis::Asset const& _asset;
 	std::unordered_map<std::string, std::vector<double>> _data;

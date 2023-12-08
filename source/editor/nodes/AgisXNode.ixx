@@ -16,6 +16,14 @@ namespace AgisX
 	class AgisXGraph;
 	class AgisXResponser;
 
+export namespace Color
+{
+	constexpr const char* RED_HEXCODE = "#FF0000";
+	constexpr const char* GREEN_HEXCODE = "#00FF00";
+	constexpr const char* BLUE_HEXCODE = "#0000FF";
+	constexpr const char* YELLOW_HEXCODE = "#FFFF00";
+	constexpr const char* PURPLE_HEXCODE = "#800080";
+}
 
 export template<typename AgisType>
 class AgisXNode : public nged::Node
