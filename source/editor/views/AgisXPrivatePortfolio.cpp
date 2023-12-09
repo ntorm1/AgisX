@@ -21,8 +21,8 @@ namespace AgisX
 
 
 //============================================================================
-AgisXPortfolioViewPrivate::AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat)
-    : AppComponent(std::nullopt), _app_state(_app_stat)
+AgisXPortfolioViewPrivate::AgisXPortfolioViewPrivate(AgisX::AppState& app_state)
+    : AppComponent(app_state,std::nullopt)
 {
 }
 
@@ -30,7 +30,7 @@ AgisXPortfolioViewPrivate::AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat)
 //============================================================================
 AgisXPortfolioViewPrivate::~AgisXPortfolioViewPrivate()
 {
-    if (_plot.has_value())
+    if (_plot)
     {
         delete _plot.value();
     }
@@ -42,11 +42,12 @@ void
 AgisXPortfolioViewPrivate::on_portfolio_click(const Agis::Portfolio& portfolio)
 {
     if (_selected_portfolio && *_selected_portfolio == &portfolio) {
-        _app_state.infof("deselected portfolio: {}", portfolio.get_portfolio_id());
+        app().infof("deselected portfolio: {}", portfolio.get_portfolio_id());
         _selected_portfolio = std::nullopt;
+        _plot = std::nullopt;
     }
     else {
-        _app_state.infof("selected portfolio: {}", portfolio.get_portfolio_id());
+        app().infof("selected portfolio: {}", portfolio.get_portfolio_id());
         _selected_strategy = std::nullopt;
         _selected_portfolio = const_cast<Agis::Portfolio*>(&portfolio);
     }
@@ -58,15 +59,22 @@ void
 AgisXPortfolioViewPrivate::on_strategy_click(const Agis::Strategy& strategy)
 {
     if (_selected_strategy && *_selected_strategy == &strategy) {
-        _app_state.infof("deselected strategy: {}", strategy.get_strategy_id());
+        app().infof("deselected strategy: {}", strategy.get_strategy_id());
         _selected_strategy = std::nullopt;
+        _plot = std::nullopt;
     }
     else {
-        _app_state.infof("selected strategy: {}", strategy.get_strategy_id());
+        app().infof("selected strategy: {}", strategy.get_strategy_id());
         _selected_portfolio = std::nullopt;
         _selected_strategy = const_cast<Agis::Strategy*>(&strategy);
+        _plot = new AgisX::AgisXPortfolioPlot(
+            app(),
+            strategy.get_tracers(),
+            this
+        );
+
     }
-    _app_state.emit_on_strategy_select(_selected_strategy);
+    app().emit_on_strategy_select(_selected_strategy);
 }
 
 //============================================================================
@@ -158,7 +166,7 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     {
         if (!_selected_portfolio)
         {
-            _app_state.errorf("No portfolio selected");
+            app().errorf("No portfolio selected");
         }
         else
         {
@@ -170,7 +178,7 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     {
         if (!_selected_portfolio)
         {
-            _app_state.errorf("No portfolio selected");
+            app().errorf("No portfolio selected");
         }
         else
         {
@@ -207,6 +215,7 @@ void AgisXPortfolioViewPrivate::draw_strategy()
     {
         strategy.set_is_disabled(false);
     }
+    (*_plot)->draw_plot();
 }
 
 
@@ -225,7 +234,7 @@ AgisXPortfolioViewPrivate::draw_new_portfolio()
 
         ImGui::Text("Exchange ID: ");
         ImGui::SameLine();
-        auto exchange_ids = _app_state.get_exchange_ids();
+        auto exchange_ids = app().get_exchange_ids();
         if (ImGui::BeginCombo("##ExchangeID", exchange_id.c_str()))
         {
             for (auto& [id, index] : *exchange_ids)
@@ -251,14 +260,14 @@ AgisXPortfolioViewPrivate::draw_new_portfolio()
         {
             std::optional<Agis::Portfolio*> parent = std::nullopt;
             auto parent_portfolio_id = (*_selected_portfolio)->get_portfolio_id();
-            parent = _app_state.get_portfolio_mut(parent_portfolio_id);
+            parent = app().get_portfolio_mut(parent_portfolio_id);
             if (!parent)
             {
-                _app_state.errorf("Parent portfolio not found: %s", parent_portfolio_id.c_str());
+                app().errorf("Parent portfolio not found: %s", parent_portfolio_id.c_str());
             }
             else
             {
-                _app_state.__create_portfolio(portfolio_id, exchange_id, parent);
+                app().__create_portfolio(portfolio_id, exchange_id, parent);
                 portfolio_id = "";
                 exchange_id = "";
             }
@@ -290,7 +299,7 @@ AgisXPortfolioViewPrivate::draw_new_strategy()
 
         ImGui::Text("Parent Exchange ID: ");
         ImGui::SameLine();
-        auto exchange_ids = _app_state.get_exchange_ids();
+        auto exchange_ids = app().get_exchange_ids();
         if (ImGui::BeginCombo("##ExchangeID", parent_exchange_id.c_str()))
         {
             for (auto& [id, index] : *exchange_ids)
@@ -317,7 +326,7 @@ AgisXPortfolioViewPrivate::draw_new_strategy()
             ImGui::Button("Create"))
         {
             auto parent_portfolio_id = (*_selected_portfolio)->get_portfolio_id();
-            _app_state.__create_strategy(strategy_id, parent_portfolio_id, parent_exchange_id, starting_capital);
+            app().__create_strategy(strategy_id, parent_portfolio_id, parent_exchange_id, starting_capital);
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -329,8 +338,9 @@ AgisXPortfolioViewPrivate::draw_new_strategy()
 void
 AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
 {
+    auto read_lock = portfolio.__aquire_read_lock();
     auto const& positions = portfolio.positions();
-    auto const& exchange_map = _app_state.get_exchanges();
+    auto const& exchange_map = app().get_exchanges();
 
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
     static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
@@ -407,7 +417,6 @@ void
 AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
 {
 	// draw popups if needed
-    auto read_lock = portfolio.__aquire_read_lock();
     draw_new_portfolio();
     draw_new_strategy();
 
@@ -432,7 +441,11 @@ AgisXPortfolioViewPrivate::on_hydra_restore() noexcept
 {
     _selected_strategy = std::nullopt;
     _selected_portfolio = std::nullopt;
-    if(_plot) (*_plot)->on_hydra_restore();
+    if (_plot)
+    {
+        delete _plot.value();
+    }
+    _plot = std::nullopt;
 }
 
 } // namespace AgisX

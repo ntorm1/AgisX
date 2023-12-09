@@ -524,7 +524,25 @@ AppState::emit_lock(bool lock)
     }
 }
 
-void AppState::update_time(long long global_time, long long next_global_time)
+
+//============================================================================
+std::vector<long long> const&
+AppState::get_global_dt_index() const noexcept
+{
+    return _hydra->get_dt_index();
+}
+
+
+//============================================================================
+size_t
+AppState::get_current_index() const noexcept
+{
+    return _hydra->get_current_index();
+}
+
+
+void
+AppState::update_time(long long global_time, long long next_global_time)
 {
     global_time_epoch = global_time;
     next_global_time_epoch = next_global_time;

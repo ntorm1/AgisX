@@ -23,8 +23,6 @@ public:
 	void init(ImGuiContext*, AgisX::Application*);
 	void set_dockspace_id(ImGuiID mainDockID_);
 	bool agree_to_quit();
-	void info(std::string const& msg);
-	void error(std::string const& msg);
 
 private:
 	nged::AgisXEditor* _DemoApp;

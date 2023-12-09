@@ -19,7 +19,11 @@ class AgisXAssetViewPrivate : public AppComponent
 {
 public:
 	AgisXAssetViewPrivate() = delete;
-	AgisXAssetViewPrivate(AgisXExchangeViewPrivate* parent, Agis::Asset const&);
+	AgisXAssetViewPrivate(
+		AgisX::AppState& app_state,
+		AgisXExchangeViewPrivate* parent,
+		Agis::Asset const&
+	);
 	~AgisXAssetViewPrivate();
 
 	void asset_table_context_menu();
@@ -50,7 +54,7 @@ private:
 	std::vector<std::string> asset_ids;
 
 public:
-	AgisXExchangeViewPrivate();
+	AgisXExchangeViewPrivate(AgisX::AppState& app_state);
 	~AgisXExchangeViewPrivate();
 
 	AppComponentType type() const noexcept override { return AppComponentType::EXCHANGE_VIEW; }

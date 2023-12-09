@@ -44,12 +44,17 @@ AgisXExchangeViewPrivate::set_selected_asset(std::string const& asset_id)
 	if(!selected_exchange) return false;
 	auto asset = (*selected_exchange)->get_asset(asset_id);
 	if (!asset) return false;
-	asset_view = std::make_unique<AgisX::AgisXAssetViewPrivate>(this, *asset.value());
+	asset_view = std::make_unique<AgisX::AgisXAssetViewPrivate>(
+        app(),
+        this, 
+        *asset.value()
+    );
 	return true;
 }
 
 
-AgisXExchangeViewPrivate::AgisXExchangeViewPrivate() : AppComponent(std::nullopt)
+AgisXExchangeViewPrivate::AgisXExchangeViewPrivate(AgisX::AppState& app_state)
+    : AppComponent(app_state, std::nullopt)
 {
 }
 
@@ -93,11 +98,12 @@ AgisXExchangeViewPrivate::get_selected_asset_id()
 
 //============================================================================
 AgisXAssetViewPrivate::AgisXAssetViewPrivate(
+    AgisX::AppState& app_state,
     AgisXExchangeViewPrivate* parent,
     Agis::Asset const& asset)
-    : AppComponent(parent), _asset(asset)
+    : AppComponent(app_state, parent), _asset(asset)
 {
-    _plot_view = new AgisXAssetPlot(this, asset);
+    _plot_view = new AgisXAssetPlot(app_state, this, asset);
 	_asset_id = _asset.get_id();
 	_data = &_asset.get_data();
 	_columns = _asset.get_column_names();

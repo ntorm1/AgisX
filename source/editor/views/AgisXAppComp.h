@@ -9,6 +9,7 @@ namespace AgisX
 enum AppComponentType
 {
 	APP_STATE,
+	PLOT_BASE,
 	PORTFOLIO_PLOT,
 	PORTFOLIO_VIEW,
 	ASSET_PLOT,
@@ -19,13 +20,20 @@ enum AppComponentType
 class AppComponent
 {
 private:
+	AgisX::AppState& _app_state;
 	std::optional<AppComponent const*> _parent;
 	std::vector<AppComponent*> _children;
 
+protected:
+	auto& app() const noexcept { return _app_state; }
+
 public:
 	AppComponent() = delete;
-	AppComponent(std::optional<AppComponent const*> parent)
-		: _parent(parent)
+	AppComponent(
+		AgisX::AppState& app_state,
+		std::optional<AppComponent const*> parent
+	)
+		: _parent(parent), _app_state(app_state)
 	{}
 
 	virtual ~AppComponent() = default;

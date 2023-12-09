@@ -14,13 +14,12 @@ class AgisXPortfolioViewPrivate : public AppComponent
 {
 
 private:
-	AgisX::AppState& _app_state;
 	std::optional<AgisX::AgisXPortfolioPlot*>	_plot = std::nullopt;
 	std::optional<Agis::Strategy*>				_selected_strategy = std::nullopt;
 	std::optional<Agis::Portfolio*>				_selected_portfolio = std::nullopt;
 
 public:
-	AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat);
+	AgisXPortfolioViewPrivate(AgisX::AppState& _app_state);
 	~AgisXPortfolioViewPrivate();
 	AppComponentType type() const noexcept { return AppComponentType::PORTFOLIO_VIEW; }
 	void draw_portfolio_tree(Agis::Portfolio const& portfolio);

@@ -67,6 +67,9 @@ public:
 	std::string const& get_global_time() const { READ_LOCK return global_time; }
 	std::string const& get_next_global_time() const { READ_LOCK return next_global_time; }
 	long long get_global_time_epoch() const { READ_LOCK return global_time_epoch; }
+	std::vector<long long> const& get_global_dt_index() const noexcept;
+	size_t get_current_index() const noexcept;
+
 	void update_time(long long global_time, long long next_global_time);
 
 	// variadic template info func

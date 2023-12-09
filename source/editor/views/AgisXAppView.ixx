@@ -31,6 +31,14 @@ public:
         write_unlock();
     }
 
+    void draw_progress_bar()
+    {
+        // Progress value (between 0.0 and 1.0)
+        auto progress = static_cast<float>(_app_state.get_current_index()) / _app_state.get_global_dt_index().size();
+        // Draw the progress bar
+        ImGui::ProgressBar(progress);
+    }
+
     void drawContent() 
     {
         if (ImGui::CollapsingHeader("State IO"))
@@ -65,6 +73,7 @@ public:
             {
                 _app_state.__reset();
             }
+            draw_progress_bar();
             ImGui::Text("Global Time: %s", _app_state.get_global_time().c_str());
             ImGui::Text("Next Global Time: %s", _app_state.get_next_global_time().c_str());
             ImGui::Separator();

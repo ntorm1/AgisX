@@ -33,7 +33,7 @@ public:
     AgisXExchangeView(
         AgisX::AppState& app_state,
         nged::NodeGraphEditor* editor
-    ) : ImGuiGraphView(editor, nullptr), _app_state(app_state)
+    ) : ImGuiGraphView(editor, nullptr), _app_state(app_state), _p(app_state)
     {
         _exchange_ids = _app_state.get_exchange_ids();
         setTitle("Exchanges");
