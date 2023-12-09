@@ -12,6 +12,7 @@ import <filesystem>;
 
 import SerializeModule;
 import HydraModule;
+import PortfolioModule;
 import ExchangeMapModule;
 import ASTStrategyModule;
 import AgisTimeUtils;
@@ -23,7 +24,10 @@ import AgisXGraph;
 namespace AgisX
 {
 
-std::string formatDuration(const std::chrono::high_resolution_clock::time_point& start,
+
+//============================================================================
+std::string
+formatDuration(const std::chrono::high_resolution_clock::time_point& start,
     const std::chrono::high_resolution_clock::time_point& stop,
     int precision = 2) {
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -31,28 +35,20 @@ std::string formatDuration(const std::chrono::high_resolution_clock::time_point&
     if (elapsed.count() < 1000) {
         return std::to_string(elapsed.count()) + "us";
     }
-    else {
+    else if (elapsed.count() < 1000000) {
+        // Display with millisecond precision
         auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+        return std::to_string(elapsedMillis.count()) + "ms";
+    }
+    else {
+        // Display with second precision
         auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed);
-
-        if (elapsed.count() < 1000000) {
-            // Display with microsecond precision
-            return std::to_string(elapsed.count()) + "us";
-        }
-        else if (elapsedMillis.count() < 60000) {
-            // Display with millisecond precision
-            return std::to_string(elapsedMillis.count()) + "ms";
-        }
-        else {
-            // Display with second precision
-            std::ostringstream ss;
-            ss << std::fixed << std::setprecision(precision)
-                << static_cast<double>(elapsedSeconds.count()) + elapsedMillis.count() / 1000.0 << "s";
-            return ss.str();
-        }
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(precision)
+            << static_cast<double>(elapsedSeconds.count()) << "s";
+        return ss.str();
     }
 }
-
 
 //============================================================================
 AppState::AppState()
@@ -192,6 +188,7 @@ AppState::__load_strategies_from_disk() noexcept
         }
     }
     auto view = get_network_view().value();
+    auto doc = view->doc();
     auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
     auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
     bool loaded_successfully = true;
@@ -223,7 +220,6 @@ AppState::__load_strategies_from_disk() noexcept
         agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
         strategy_node->onSave();
     }
-    agisx_graph->clear();
     auto graph = agisx_graph->docRoot()->root();
     // update the new graph pointer for each view
     for (auto& [type, view] : _views)
@@ -231,6 +227,7 @@ AppState::__load_strategies_from_disk() noexcept
         // create weak pointer from the shared graph pointer
         auto weak_graph = std::weak_ptr<nged::Graph>(graph);
         view->reset(weak_graph);
+        //
     }
     if (loaded_successfully)
     {
@@ -254,10 +251,9 @@ AppState::__load_state() noexcept
         {
             emit_lock(true);
             _hydra = std::move(res.value());
-            __load_strategies_from_disk();
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-            emit_on_hydra_restore();
+            on_hydra_restore();
             nged::MessageHub::infof("Hydra loaded in {} ms", std::to_string(elapsed.count()));
         }
         else
@@ -298,8 +294,9 @@ AppState::__build() noexcept
 void
 AppState::__step() noexcept
 {
-    auto lock = _hydra->__aquire_write_lock();
     std::thread step_thread([this] {
+        auto portfolio_lock = _hydra->get_portfolio_mut("master").value()->__aquire_write_lock();
+        auto lock = _hydra->__aquire_write_lock();
         nged::MessageHub::debugf("Starting step, current time: {}", get_global_time());
         if (_hydra->get_state() != Agis::HydraState::BUILT && _hydra->get_state() != Agis::HydraState::RUN)
         {
@@ -318,6 +315,36 @@ AppState::__step() noexcept
     step_thread.detach();
 }
 
+
+//============================================================================
+void
+AppState::__run() noexcept
+{
+    std::thread run_thread([this] {
+        nged::MessageHub::debugf("Starting Run, current time: {}", get_global_time());
+        if (_hydra->get_state() != Agis::HydraState::BUILT && _hydra->get_state() != Agis::HydraState::RUN)
+        {
+            nged::MessageHub::error("Hydra is not built or running");
+            return;
+        }
+        auto start = std::chrono::high_resolution_clock::now();
+        auto res = _hydra->run();
+        auto stop = std::chrono::high_resolution_clock::now();
+        long long global_epoch = _hydra->get_global_time();
+        long long next_epoch = 0;
+        update_time(global_epoch, next_epoch);
+        nged::MessageHub::debugf("Run Complete, current time: {}", get_global_time());
+        nged::MessageHub::infof("Hydra Run successfully in {}", formatDuration(start, stop));
+    
+        // get number of seconds elapsed
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
+        double seconds = duration.count();
+        double candles = _hydra->get_exchanges().get_candle_count();
+        nged::MessageHub::infof("Candles {}", candles);
+        nged::MessageHub::infof("Candles Per Second {}", candles / seconds);
+    });
+    run_thread.detach();
+}
 
 //============================================================================
 void
@@ -475,7 +502,7 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
 
 //============================================================================
 void
-AppState::emit_on_hydra_restore()
+AppState::on_hydra_restore() noexcept
 {
     for (auto& [type, view] : _views)
     {
@@ -499,6 +526,8 @@ AppState::emit_lock(bool lock)
 
 void AppState::update_time(long long global_time, long long next_global_time)
 {
+    global_time_epoch = global_time;
+    next_global_time_epoch = next_global_time;
     auto t = Agis::epoch_to_str(global_time, "%Y-%m-%d %H:%M:%S");
     auto t_next = Agis::epoch_to_str(next_global_time, "%Y-%m-%d %H:%M:%S");
     set_global_time(t.value());

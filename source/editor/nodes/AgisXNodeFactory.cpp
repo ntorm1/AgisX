@@ -74,7 +74,8 @@ AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
     else if (type == "ExchangeViewNode")
 		return std::make_shared<AgisXExchangeViewNode>(parent, type, "Exchange View", base_strategy, 2);
     else {
-        throw std::runtime_error("unknown node type");
+        nged::MessageHub::errorf("Unknown/Unexpected node type: {}", type);
+        return nullptr;
     }
 }
 

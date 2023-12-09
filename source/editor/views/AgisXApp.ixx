@@ -13,11 +13,16 @@ export module AgisXApp;
 namespace AgisX
 {
 
+class AppState;
+
+
 export class AppState
 {
 public:
 	AppState();
 	~AppState();
+
+	void on_hydra_restore() noexcept;
 
 	std::optional<Agis::Portfolio*> get_portfolio_mut(std::string const& id) const noexcept;
 	std::optional<Agis::Portfolio const*> get_portfolio(std::string const& id) const noexcept;
@@ -31,6 +36,7 @@ public:
 	void __load_state() noexcept;
 	void __build() noexcept;
 	void __step() noexcept;
+	void __run() noexcept;
 	void __reset() noexcept;
 
 	void __create_strategy(
@@ -51,15 +57,16 @@ public:
 		std::optional<Agis::Portfolio*> parent = std::nullopt
 	) noexcept;
 
+
 	void add_view(std::string const& name, nged::GraphViewPtr view) { WRITE_LOCK _views[name] = view; }
 	void emit_on_strategy_select(std::optional<Agis::Strategy*> strategy);
-	void emit_on_hydra_restore();
 	void emit_lock(bool lock = true);
 
 	void set_global_time(std::string const& time) { WRITE_LOCK global_time = time; }
 	void set_next_global_time(std::string const& time) { WRITE_LOCK next_global_time = time; }
 	std::string const& get_global_time() const { READ_LOCK return global_time; }
 	std::string const& get_next_global_time() const { READ_LOCK return next_global_time; }
+	long long get_global_time_epoch() const { READ_LOCK return global_time_epoch; }
 	void update_time(long long global_time, long long next_global_time);
 
 	// variadic template info func
@@ -84,6 +91,8 @@ private:
 	mutable std::shared_mutex _mutex;
 	std::string global_time = "";
 	std::string next_global_time = "";
+	long long global_time_epoch = 0;
+	long long next_global_time_epoch = 0;
 
 	std::string env_name = "default";
 	std::string _env_dir = "";

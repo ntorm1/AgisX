@@ -22,8 +22,9 @@
 import AgisXApp;
 static AgisX::AppState app_state;
 
+#include "../editor/views/AgisXPortfolioView.h"
+
 import AgisXExchangeViewModule;
-import AgisXPortfolioViewModule;
 import AgisXAppViewModule;
 
 // string format support {{{

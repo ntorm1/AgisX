@@ -172,7 +172,7 @@ int main(int, char**)
 
         if (ImGui::BeginViewportSideBar("##MainStatusBar", viewport, ImGuiDir_Down, height, window_flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Text(("Env: " + instance.get_env_name()).c_str());
+                ImGui::Text("Env: Default");
                 ImGui::SameLine(ImGui::GetWindowWidth() - 180);
                 ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
                 ImGui::EndMenuBar();

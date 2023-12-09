@@ -1,7 +1,10 @@
 #include "AgisXPrivatePortfolio.h"
+#include "AgisXPlot.h"
 #include <imgui.h>
 #include "../nged_imgui.h"
 #include "../res/fa_icondef.h"
+
+
 
 import <string>;
 import <optional>;
@@ -17,10 +20,20 @@ namespace AgisX
 {
 
 
+//============================================================================
+AgisXPortfolioViewPrivate::AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat)
+    : AppComponent(std::nullopt), _app_state(_app_stat)
+{
+}
+
 
 //============================================================================
 AgisXPortfolioViewPrivate::~AgisXPortfolioViewPrivate()
 {
+    if (_plot.has_value())
+    {
+        delete _plot.value();
+    }
 }
 
 
@@ -394,6 +407,7 @@ void
 AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
 {
 	// draw popups if needed
+    auto read_lock = portfolio.__aquire_read_lock();
     draw_new_portfolio();
     draw_new_strategy();
 
@@ -409,6 +423,16 @@ AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
     {
         draw_book(portfolio);
     }
+}
+
+
+//============================================================================
+void
+AgisXPortfolioViewPrivate::on_hydra_restore() noexcept
+{
+    _selected_strategy = std::nullopt;
+    _selected_portfolio = std::nullopt;
+    if(_plot) (*_plot)->on_hydra_restore();
 }
 
 } // namespace AgisX

@@ -1,4 +1,5 @@
 #include "AgisXPrivate.h"
+#include "AgisXPlot.h"
 
 #include <imgui.h>
 #include <implot.h>
@@ -43,9 +44,26 @@ AgisXExchangeViewPrivate::set_selected_asset(std::string const& asset_id)
 	if(!selected_exchange) return false;
 	auto asset = (*selected_exchange)->get_asset(asset_id);
 	if (!asset) return false;
-	asset_view = std::make_unique<AgisX::AgisXAssetViewPrivate>(*asset.value());
+	asset_view = std::make_unique<AgisX::AgisXAssetViewPrivate>(this, *asset.value());
 	return true;
 }
+
+
+AgisXExchangeViewPrivate::AgisXExchangeViewPrivate() : AppComponent(std::nullopt)
+{
+}
+
+
+//============================================================================
+void
+AgisXExchangeViewPrivate::on_hydra_restore() noexcept
+{
+	auto lock = std::unique_lock(_mutex);
+    asset_view = std::nullopt;
+    selected_exchange = std::nullopt;
+    asset_ids.clear();
+}
+
 
 //============================================================================
 void
@@ -74,13 +92,16 @@ AgisXExchangeViewPrivate::get_selected_asset_id()
 
 
 //============================================================================
-AgisXAssetViewPrivate::AgisXAssetViewPrivate(Agis::Asset const& asset) 
-    : _asset(asset), _plot_view(asset)
+AgisXAssetViewPrivate::AgisXAssetViewPrivate(
+    AgisXExchangeViewPrivate* parent,
+    Agis::Asset const& asset)
+    : AppComponent(parent), _asset(asset)
 {
+    _plot_view = new AgisXAssetPlot(this, asset);
 	_asset_id = _asset.get_id();
 	_data = &_asset.get_data();
 	_columns = _asset.get_column_names();
-	auto timestamps = _asset.get_dt_index();
+	auto const& timestamps = _asset.get_dt_index();
 	for (auto const& ts : timestamps)
 	{
 		_dt_index.push_back(Agis::epoch_to_str(ts, "%Y-%m-%d %H:%M:%S").value());
@@ -88,9 +109,11 @@ AgisXAssetViewPrivate::AgisXAssetViewPrivate(Agis::Asset const& asset)
 }
 
 
+
 //============================================================================
 AgisXAssetViewPrivate::~AgisXAssetViewPrivate()
 {
+    delete _plot_view;
 }
 
 
@@ -112,12 +135,12 @@ AgisXAssetViewPrivate::asset_table_context_menu()
             {
 				auto& column_name = _columns[i-1];
 				auto column_vector = _asset.get_column(column_name);
-				_plot_view.add_data(column_name, *column_vector);
+				_plot_view->add_data(column_name, *column_vector);
                 ImGui::CloseCurrentPopup();
             }
             if (ImGui::Button("Close"))
             {
-                _plot_view.remove_data(_columns[i-1]);
+                _plot_view->remove_data(_columns[i-1]);
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
@@ -132,7 +155,7 @@ void AgisXAssetViewPrivate::draw()
 {
     ImGui::Text("Asset: %s", _asset_id.c_str());
 	draw_table();
-	draw_plot();
+	_plot_view->draw_plot();
 }
 
 
@@ -181,8 +204,8 @@ void AgisXAssetViewPrivate::draw_table()
                 for (size_t column = 0; column < table_columns.size(); column++)
                 {
                     // get index into row major data array and render
-                    ImGui::TableSetColumnIndex(column + 1);
-                    int index = row * table_columns.size() + column;
+                    ImGui::TableSetColumnIndex(static_cast<int>(column) + 1);
+                    auto index = row * table_columns.size() + column;
                     auto value = _data->at(index);
                     ImGui::Text("%.2f", value);
                 }
@@ -192,84 +215,5 @@ void AgisXAssetViewPrivate::draw_table()
         ImGui::EndTable();
     }
 }
-
-
-//============================================================================
-void AgisXAssetViewPrivate::draw_plot()
-{
-    if (ImPlot::BeginPlot(_asset_id.c_str())) 
-    {
-        if (!_plot_view._data.size())
-        {
-            ImPlot::EndPlot();
-            return;
-        }
-        ImPlot::SetupAxes(0, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
-        ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
-        ImPlot::SetupAxisLimits(ImAxis_X1, _plot_view._dt_index[0], _plot_view._dt_index.back());
-        for (auto const& [column_name, column_vector] : _plot_view._data)
-		{
-            ImPlot::PlotLine(column_name.c_str(), _plot_view._dt_index.data(), column_vector.data(), column_vector.size());
-		}
-        // plot the current close price as a point provided close col is plotted and asset is streaming
-        if (
-            _plot_view._data.count(_asset.get_close_column())
-            &&
-            _asset.get_streaming_index())
-        {
-            auto streaming_index = *_asset.get_streaming_index();
-            double current_time = _plot_view._dt_index[streaming_index];
-            ImPlot::PushStyleVar(ImPlotStyleVar_Marker, ImPlotMarker_Circle);
-            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 6);
-            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 3);
-            ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(1, 0, 0, 1));
-            ImPlot::PlotScatter("Close", &current_time, &_plot_view._data[_asset.get_close_column()][streaming_index], 1);
-            ImPlot::PopStyleVar(3);
-        }
-        ImPlot::EndPlot();
-    }
-}
-
-
-//============================================================================
-AgisXPlotViewPrivate::AgisXPlotViewPrivate(Agis::Asset const& asset) : _asset(asset)
-{
-    auto& int_epcoh_index = asset.get_dt_index();
-    _dt_index.reserve(int_epcoh_index.size());
-    for (size_t i = 0; i < int_epcoh_index.size(); i++)
-	{
-        long long ns_epoch = int_epcoh_index[i];
-        double s_epoch = static_cast<double>(ns_epoch / 1000000000.0);
-        _dt_index.push_back(s_epoch);
-	}
-}
-
-
-//============================================================================
-void
-AgisXPlotViewPrivate::add_data(std::string const& column, std::vector<double>& data)
-{
-    if(!data.size()) return;
-    _data.insert({ column, data });
-}
-
-
-//============================================================================
-void
-AgisXPlotViewPrivate::remove_data(std::string const& column)
-{
-    if (!_data.count(column)) return;
-    _data.erase(column);
-}
-
-
-//============================================================================
-void
-AgisXPlotViewPrivate::reset()
-{
-    _data.clear();
-}
-
-
 
 }

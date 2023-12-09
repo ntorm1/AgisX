@@ -56,6 +56,11 @@ public:
                 _app_state.__step();
             }
             ImGui::SameLine();
+            if (ImGui::Button("Run"))
+            {
+                _app_state.__run();
+            }
+            ImGui::SameLine();
             if (ImGui::Button("Reset"))
             {
                 _app_state.__reset();

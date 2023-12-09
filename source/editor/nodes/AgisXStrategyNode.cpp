@@ -118,6 +118,12 @@ void
 AgisXStrategyNode::render_inspector() noexcept
 {
 	ImGui::Text("Strategy ID: %s", strategy().get_strategy_id().c_str());
+	// add doulbe input for epsilon
+	ImGui::Text("Allocation Epsilon: ");
+	ImGui::SameLine();
+	ImGui::PushItemWidth(100);
+	ImGui::InputDouble("##epsilon", &_alloc_epsilon);
+	ImGui::PopItemWidth();
 }
 
 

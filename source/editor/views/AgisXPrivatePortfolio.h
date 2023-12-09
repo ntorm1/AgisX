@@ -3,19 +3,26 @@
 
 #include "AgisDeclare.h"
 #include "../../app/AgisXDeclare.h"
+#include "AgisXAppComp.h"
 
-#include <optional>
 
 namespace AgisX
 {
 
 //============================================================================
-class AgisXPortfolioViewPrivate
+class AgisXPortfolioViewPrivate : public AppComponent
 {
-public:
-	AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat) : _app_state(_app_stat) {}
-	~AgisXPortfolioViewPrivate();
 
+private:
+	AgisX::AppState& _app_state;
+	std::optional<AgisX::AgisXPortfolioPlot*>	_plot = std::nullopt;
+	std::optional<Agis::Strategy*>				_selected_strategy = std::nullopt;
+	std::optional<Agis::Portfolio*>				_selected_portfolio = std::nullopt;
+
+public:
+	AgisXPortfolioViewPrivate(AgisX::AppState& _app_stat);
+	~AgisXPortfolioViewPrivate();
+	AppComponentType type() const noexcept { return AppComponentType::PORTFOLIO_VIEW; }
 	void draw_portfolio_tree(Agis::Portfolio const& portfolio);
 	void draw_portfolio_node(Agis::Portfolio const& portfolio);
 	void draw_strategy();
@@ -25,16 +32,9 @@ public:
 
 	void on_portfolio_click(Agis::Portfolio const& portfolio);
 	void on_strategy_click(Agis::Strategy const& strategy);
-	void on_hydra_restore() noexcept
-	{
-		_selected_strategy = std::nullopt;
-		_selected_portfolio = std::nullopt; 
-	}
-private:
-	AgisX::AppState& _app_state;
+	void on_hydra_restore() noexcept override;
 
-	std::optional<Agis::Strategy*> _selected_strategy = std::nullopt;
-	std::optional<Agis::Portfolio*> _selected_portfolio = std::nullopt;
+
 };
 
 } // namespace AgisX

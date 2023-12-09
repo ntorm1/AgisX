@@ -2,6 +2,7 @@
 
 #include "AgisDeclare.h"
 #include "../../app/AgisXDeclare.h"
+#include "AgisXAppComp.h"
 
 #include <optional>
 #include <vector>
@@ -14,36 +15,22 @@ namespace AgisX
 
 
 //============================================================================
-struct AgisXPlotViewPrivate
+class AgisXAssetViewPrivate : public AppComponent
 {
-	AgisXPlotViewPrivate(Agis::Asset const&);
-	void add_data(
-		std::string const& column,
-		std::vector<double>& data
-	);
-	void remove_data(std::string const& column);
-
-	void reset();
-	Agis::Asset const& _asset;
-	std::unordered_map<std::string, std::vector<double>> _data;
-	std::vector<double> _dt_index;
-};
-
-
-//============================================================================
-struct AgisXAssetViewPrivate
-{
+public:
 	AgisXAssetViewPrivate() = delete;
-	AgisXAssetViewPrivate(Agis::Asset const&);
+	AgisXAssetViewPrivate(AgisXExchangeViewPrivate* parent, Agis::Asset const&);
 	~AgisXAssetViewPrivate();
 
 	void asset_table_context_menu();
 	void draw();
-	void draw_plot();
 	void draw_table();
 
+	AppComponentType type() const noexcept override{ return AppComponentType::ASSET_VIEW; }
+	void on_hydra_restore() noexcept override {}
+
 	Agis::Asset const& _asset;
-	AgisXPlotViewPrivate _plot_view;
+	AgisX::AgisXAssetPlot* _plot_view;
 	std::vector<std::string> _columns;
 	std::vector<double> const* _data;
 	std::vector<std::string> _dt_index;
@@ -54,7 +41,7 @@ struct AgisXAssetViewPrivate
 
 
 //============================================================================
-class AgisXExchangeViewPrivate
+class AgisXExchangeViewPrivate : public AppComponent
 {
 private:
 	mutable std::shared_mutex _mutex;
@@ -63,8 +50,11 @@ private:
 	std::vector<std::string> asset_ids;
 
 public:
-	AgisXExchangeViewPrivate() = default;
+	AgisXExchangeViewPrivate();
 	~AgisXExchangeViewPrivate();
+
+	AppComponentType type() const noexcept override { return AppComponentType::EXCHANGE_VIEW; }
+	void on_hydra_restore() noexcept override;
 
 	std::optional<AgisXAssetViewPrivate*> get_asset_view() const noexcept;
 	bool set_selected_asset(std::string const& asset_id);
