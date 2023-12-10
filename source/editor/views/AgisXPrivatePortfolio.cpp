@@ -100,7 +100,7 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
 
     // draw the tree element corresponding to this portfolio
     static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-   
+
     ImGuiTreeNodeFlags node_flags = base_flags;
     if (
         _selected_portfolio &&
@@ -110,17 +110,15 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     }
     bool is_node_open = ImGui::TreeNodeEx(id.c_str(), node_flags, id.c_str());
     node_flags = base_flags;
-    if (ImGui::IsItemClicked()) {
+    if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[0]) {
         on_portfolio_click(portfolio);
     }
-    // Check for right-click within the TreeNode
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-        ImGui::OpenPopupOnItemClick("PortfolioContextMenu", ImGuiPopupFlags_MouseButtonRight);
+    else if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[1])
+    {
+        on_portfolio_click(portfolio);
+        ImGui::OpenPopup("PortfolioContextMenu");
     }
     if (is_node_open) {
-        if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-             ImGui::OpenPopupOnItemClick("PortfolioContextMenu", ImGuiPopupFlags_MouseButtonRight);
-        }
         // draw the child portfolios
         for (auto& [index, child_portfolio] : portfolio.child_portfolios())
         {
@@ -163,9 +161,8 @@ AgisXPortfolioViewPrivate::draw_portfolio_node(Agis::Portfolio const& portfolio)
     // Context Menu
     static bool open_new_portfolio_popup = false;
     static bool open_new_strategy_popup = false;
-    if (ImGui::BeginPopupContextItem("PortfolioContextMenu"))
+    if (_selected_portfolio && ImGui::BeginPopupContextItem("PortfolioContextMenu"))
     {
-
         if (ImGui::MenuItem("New Portfolio"))
         {
             open_new_portfolio_popup = true;
@@ -352,7 +349,6 @@ AgisXPortfolioViewPrivate::draw_new_strategy()
 void
 AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
 {
-    auto read_lock = portfolio.__aquire_read_lock();
     auto const& positions = portfolio.positions();
     auto const& exchange_map = app().get_exchanges();
 
@@ -430,7 +426,7 @@ AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
 void
 AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
 {
-	// draw popups if needed
+    auto read_lock = portfolio.__aquire_read_lock();
     draw_new_portfolio();
     draw_new_strategy();
 

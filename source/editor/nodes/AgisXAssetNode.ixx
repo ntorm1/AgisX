@@ -48,7 +48,10 @@ public:
 
 
 	template<typename... Args>
-	AgisXAssetOpNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) {}
+	AgisXAssetOpNode(Args&&... args) : AgisXNode<AgisType>(std::forward<Args>(args)...) 
+	{
+		setColor(gmath::hexCodeToSRGB(Color::CYAN_HEXCODE));
+	}
 	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	nged::sint numOutputs() const override { return 1; }
 

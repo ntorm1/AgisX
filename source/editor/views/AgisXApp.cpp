@@ -213,6 +213,7 @@ AppState::__load_strategies_from_disk() noexcept
 		}
         // load in .ng graph file and create the AST Strategy graph
         view->editor()->set_strategy(ast_strategy);
+        agisx_node_factory->reset_strategy_node_count();
         view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
         agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
         agisx_graph->strategy_node()->onSave();
@@ -482,6 +483,7 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
     );
     //agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
     view->editor()->set_strategy(ast_strategy);
+    agisx_node_factory->reset_strategy_node_count();
     view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
     nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
 }

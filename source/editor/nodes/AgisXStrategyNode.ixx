@@ -37,6 +37,7 @@ public:
 		AgisXNode(parent, type, name, *this, num_inputs), 
 		_strategy(strategy)
 	{
+		setColor(gmath::hexCodeToSRGB(Color::GREEN_HEXCODE));
 		_exchange_node = std::make_shared<AgisXExchangeNode>(
 			parent, "ExchangeNode", "Exchange", *this, 0, strategy.get_exchange_id()
 		);
@@ -61,7 +62,10 @@ export class AgisXAllocationNode
 {
 public:
 	template<typename... Args>
-	AgisXAllocationNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
+	AgisXAllocationNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) 
+	{
+		setColor(gmath::hexCodeToSRGB(Color::GOLD_HEXCODE));
+	}
 	void render_inspector() noexcept override;
 
 	bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;

@@ -58,6 +58,12 @@ AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
     }
     if (type == "StrategyNode")
     {
+        if (_strategy_node_count > 0)
+        {
+			nged::MessageHub::error("Strategy node already created");
+			return nullptr;
+		}
+        _strategy_node_count++;
         return strategy_node;
     }
 
