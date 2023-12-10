@@ -22,8 +22,9 @@
 import AgisXApp;
 static AgisX::AppState app_state;
 
+#include "../editor/views/AgisXPortfolioView.h"
+
 import AgisXExchangeViewModule;
-import AgisXPortfolioViewModule;
 import AgisXAppViewModule;
 
 // string format support {{{
@@ -1898,7 +1899,8 @@ bool MoveState::shouldEnter(NetworkView const* view) const
 {
   if (view->readonly())
     return false;
-  auto hovering = view->graph()->get(view->hoveringItem());
+  auto graph = view->graph();
+  auto hovering = graph->get(view->hoveringItem());
   return view->isFocused() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
          ImGui::GetIO().KeyMods == 0 && hovering &&
          !hovering->asLink() &&

@@ -1209,7 +1209,7 @@ bool NodeGraphEditor::loadDocInto(StringView path, NodeGraphDocPtr dest)
       return false;
     }
   }
-  if (!filepath.empty() && dest->open(filepath)) {
+  if (!filepath.empty() && dest->open(filepath, strategy_)) {
     for (auto&& view : views_) {
       if (view->doc() == dest) {
         view->reset(dest->root());

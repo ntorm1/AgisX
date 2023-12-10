@@ -1281,10 +1281,10 @@ namespace nged {
         for (auto&& itemdata : json["items"]) {
             String type = itemdata["type"];
             auto uid = UID();
-            if (type == "StrategyNode")
-            {
-                continue;
-            }
+            //if (type == "StrategyNode")
+            //{
+            //    continue;
+            //}
             String       factory = itemdata["f"];
             GraphItemPtr newitem;
             if (factory.empty() || factory == "node") {
@@ -1308,6 +1308,11 @@ namespace nged {
         for (auto&& linkdata : json["links"]) {
             auto const& from = linkdata["from"];
             auto const& to = linkdata["to"];
+            if (!idmap.contains(from["id"]) || !idmap.contains(to["id"]))
+            {
+				msghub::errorf("failed to deserialize link {}", linkdata.dump(2));
+				continue;
+			}
             InputConnection  incon = { idmap.at(from["id"]), sint(from["port"]) };
             OutputConnection outcon = { idmap.at(to["id"]), sint(to["port"]) };
             newlinks.insert(outcon);
@@ -1823,23 +1828,27 @@ namespace nged {
 
     StringView NodeGraphDoc::title() const { return title_; }
 
-    bool NodeGraphDoc::open(String path)
+    bool NodeGraphDoc::open(
+        String path,
+        std::optional<Agis::ASTStrategy*> strategy
+    )
         try {
         std::ifstream infile(path);
         if (!infile.good()) {
             msghub::errorf("failed to open \"{}\"", path);
             return false;
         }
-
+        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this, strategy));
         auto content = filterFileInput(String{ std::istreambuf_iterator<char>(infile), {} });
-        Json injson = Json::parse(content);
-
-        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this));
-        if (!newgraph->deserialize(injson["root"])) {
-            msghub::errorf("failed to deserialize content from {}", path);
-            return false;
+        if (!content.empty()){
+            Json injson = Json::parse(content);
+            if (!newgraph->deserialize(injson["root"]))
+            {
+                msghub::errorf("failed to deserialize content from {}", path);
+                return false;
+            }
         }
-        // TODO: update viewers
+        // TODO: update viewers. As of now views are uupdate by the app state.
         root_ = newgraph;
         savePath_ = path;
         title_ = std::filesystem::path(savePath_).stem().string();
@@ -1860,14 +1869,18 @@ namespace nged {
             msghub::errorf("document {} is read-only, cannot save", savePath_);
             return false;
         }
-        if (saveTo(savePath_)) {
-            history_.markSaved();
-            dirty_ = false;
-            return true;
-        }
-        else {
+        if (!saveTo(savePath_)) {
             return false;
         }
+        history_.markSaved();
+        dirty_ = false;
+        msghub::infof("document saved to: {}", savePath_);
+        for (auto& id : root_->items())
+        {
+            auto item = root_->get(id);
+            item->onSave();
+        }
+        return true;
     }
 
     bool NodeGraphDoc::saveAs(String path)

@@ -15,8 +15,10 @@ import ASTStrategyModule;
 namespace AgisX
 {
 
+class AgisXAllocationNode;
+
 export class AgisXStrategyNode 
-	: public AgisXNode<UniquePtr<Agis::AST::StrategyNode>>
+	: public AgisXNode<bool>
 {
 	friend class AgisxNodeFactory;
 
@@ -24,10 +26,9 @@ private:
 	SharedPtr<AgisXExchangeNode> _exchange_node = nullptr;
 	Agis::ASTStrategy const& strategy() const noexcept { return _strategy; }
 	Agis::ASTStrategy& _strategy;
-
+	mutable std::optional<AgisX::AgisXAllocationNode const*> _alloc_input = std::nullopt;
+	double _alloc_epsilon = 0.001;
 public:
-	using AgisType = UniquePtr<Agis::AST::StrategyNode>;
-
 	AgisXStrategyNode(nged::Graph* parent,
 		nged::StringView type,
 		nged::StringView name,
@@ -41,10 +42,13 @@ public:
 		);
 	}
 
+	bool onSave() noexcept override;
 	nged::sint numOutputs() const override { return 0; }
+	nged::sint numMaxInputs() const override { return 1; }
+	bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	void render_inspector() noexcept override;
 	AgisXExchangeNode const& get_exchange_node() const noexcept { return *_exchange_node.get(); }
-	std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> to_agis() const noexcept override;
+	std::expected<bool, Agis::AgisException> to_agis() const noexcept override;
 	bool deserialize(nged::Json const& json) override { return nged::Node::deserialize(json); }
 	bool serialize(nged::Json& json) const override { return nged::Node::serialize(json); }
 	std::string const& graph_file_path() const noexcept { return strategy().graph_file_path(); }
@@ -60,7 +64,7 @@ public:
 	AgisXAllocationNode(Args&&... args) : AgisXNode(std::forward<Args>(args)...) {}
 	void render_inspector() noexcept override;
 
-	virtual bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
+	bool acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const override;
 	std::expected<UniquePtr<Agis::AST::AllocationNode>, Agis::AgisException> to_agis() const noexcept override;
 	bool deserialize(nged::Json const& json) override;
 	bool serialize(nged::Json& json) const override;

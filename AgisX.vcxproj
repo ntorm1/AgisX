@@ -146,13 +146,13 @@
     <ClCompile Include="external\miniz\miniz.c" />
     <ClCompile Include="external\nfd\nfd_common.c" />
     <ClCompile Include="external\nfd\nfd_win.cpp" />
+    <ClCompile Include="source\app\App.cpp" />
     <ClCompile Include="source\app\AppStyle.cpp" />
     <ClCompile Include="source\app\EditorComp.cpp" />
     <ClCompile Include="source\app\main.cpp" />
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp" />
-    <ClCompile Include="source\app\App.cpp" />
-    <ClCompile Include="source\app\App.h" />
     <ClCompile Include="source\editor\editor.cpp" />
+    <ClCompile Include="source\editor\gmath.cpp" />
     <ClCompile Include="source\editor\ngdoc.cpp" />
     <ClCompile Include="source\editor\ngdraw.cpp" />
     <ClCompile Include="source\editor\nged.cpp" />
@@ -179,7 +179,9 @@
     <ClCompile Include="source\editor\views\AgisXApp.ixx" />
     <ClCompile Include="source\editor\views\AgisXAppView.ixx" />
     <ClCompile Include="source\editor\views\AgisXExchangeView.ixx" />
-    <ClCompile Include="source\editor\views\AgisXPortfolioView.ixx" />
+    <ClCompile Include="source\editor\views\AgisXPlot.cpp" />
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.cpp" />
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.h" />
     <ClCompile Include="source\editor\views\AgisXPrivate.cpp" />
     <ClCompile Include="source\editor\views\AgisXPrivatePortfolio.cpp" />
   </ItemGroup>
@@ -211,6 +213,7 @@
     <ClInclude Include="external\nged\style.h" />
     <ClInclude Include="external\nged\utils.h" />
     <ClInclude Include="source\app\AgisXDeclare.h" />
+    <ClInclude Include="source\app\App.h" />
     <ClInclude Include="source\app\AppStyle.h" />
     <ClInclude Include="source\app\BaseComp.h" />
     <ClInclude Include="source\app\EditorComp.h" />
@@ -230,6 +233,8 @@
     <ClInclude Include="source\editor\res\sourcecodepro.hpp" />
     <ClInclude Include="source\editor\style.h" />
     <ClInclude Include="source\editor\utils.h" />
+    <ClInclude Include="source\editor\views\AgisXAppComp.h" />
+    <ClInclude Include="source\editor\views\AgisXPlot.h" />
     <ClInclude Include="source\editor\views\AgisXPrivate.h" />
     <ClInclude Include="source\editor\views\AgisXPrivatePortfolio.h" />
   </ItemGroup>

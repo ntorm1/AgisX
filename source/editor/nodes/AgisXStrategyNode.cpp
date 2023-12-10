@@ -1,6 +1,7 @@
 module;
 #include "../nged_imgui.h"
 #include "AgisXSerialize.h"
+#include "AgisMacros.h"
 
 module AgisXStrategyNodeMod;
 
@@ -38,10 +39,20 @@ bool AgisXAllocationNode::acceptInput(nged::sint port, Node const* sourceNode, n
 	return true;
 }
 
+
 //==================================================================================================
-std::expected<UniquePtr<Agis::AST::AllocationNode>, Agis::AgisException> AgisXAllocationNode::to_agis() const noexcept
+std::expected<UniquePtr<Agis::AST::AllocationNode>, Agis::AgisException>
+AgisXAllocationNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	if (!_ev_input)
+	{
+		return std::unexpected(Agis::AgisException("alloc node missing ev input"));
+	}
+	AGIS_ASSIGN_OR_RETURN(ev_input, (*_ev_input)->to_agis());
+	return std::make_unique<Agis::AST::AllocationNode>(
+		std::move(ev_input),
+		_alloc_type
+	);
 }
 
 
@@ -76,16 +87,60 @@ bool AgisXAllocationNode::serialize(nged::Json& json) const
 
 
 //==================================================================================================
+bool AgisXStrategyNode::onSave() noexcept
+{
+	auto res = to_agis();
+	if (!res)
+	{
+		app().errorf("failed to rebuild AST strategy: {}", res.error().what());
+	}
+	else
+	{
+		app().infof("rebuild AST strategy: {} successful", strategy().get_strategy_id());
+	}	
+	return true;
+}
+
+//==================================================================================================
+bool
+AgisXStrategyNode::acceptInput(nged::sint port, Node const* sourceNode, nged::sint sourcePort) const
+{
+	if (sourceNode->type() != "AllocationNode")
+	{
+		return false;
+	}
+	_alloc_input = static_cast<AgisXAllocationNode const*>(sourceNode);
+	return true;
+}
+
+//==================================================================================================
 void
 AgisXStrategyNode::render_inspector() noexcept
 {
 	ImGui::Text("Strategy ID: %s", strategy().get_strategy_id().c_str());
+	// add doulbe input for epsilon
+	ImGui::Text("Allocation Epsilon: ");
+	ImGui::SameLine();
+	ImGui::PushItemWidth(100);
+	ImGui::InputDouble("##epsilon", &_alloc_epsilon);
+	ImGui::PopItemWidth();
 }
 
+
 //==================================================================================================
-std::expected<UniquePtr<Agis::AST::StrategyNode>, Agis::AgisException> AgisXStrategyNode::to_agis() const noexcept
+std::expected<bool, Agis::AgisException>
+AgisXStrategyNode::to_agis() const noexcept
 {
-	return std::unexpected(Agis::AgisException("not implemented"));
+	app().infof("rebuilding AST strategy: {}", strategy().get_strategy_id());
+	if (!_alloc_input)
+	{
+		return std::unexpected(Agis::AgisException("no allocation input"));
+	}
+	AGIS_ASSIGN_OR_RETURN(alloc_node, (*_alloc_input)->to_agis());
+	_strategy.set_alloc_node(std::move(alloc_node));
+	_strategy.set_epsilon(_alloc_epsilon);
+	app().infof("AST strategy: {} built", strategy().get_strategy_id());
+	return true;
 }
 
 

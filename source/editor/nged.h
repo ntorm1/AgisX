@@ -4,6 +4,7 @@
 #include "nged_graph_view.h"
 
 #include "../app/AgisXDeclare.h"
+#include "AgisDeclare.h"
 
 namespace nged {
 
@@ -504,7 +505,10 @@ public:
   using ViewPtr = std::shared_ptr<GraphView>;
   virtual ~NodeGraphEditor() { }
 
+  void set_strategy(Agis::ASTStrategy* strategy) { strategy_ = strategy; }
+
 protected:
+  Agis::ASTStrategy* strategy_ = nullptr;
   HashSet<ViewPtr> views_;              // docs are held by views
   HashSet<ViewPtr> pendingAddViews_;    // newly added views, moved into `views_` on each update()
   HashSet<ViewPtr> pendingRemoveViews_; // views to be removed, also will be done at next update()

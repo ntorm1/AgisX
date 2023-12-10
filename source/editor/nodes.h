@@ -1,7 +1,6 @@
 #pragma once
 #include "nged.h"
 
-
 class DummyNode : public nged::Node
 {
     int numInput = 1;
@@ -48,7 +47,7 @@ static DummyNodeDef defs[] = {
 class MyNodeFactory : public nged::NodeFactory
 {
 public:
-    nged::GraphPtr createRootGraph(nged::NodeGraphDoc* root) const override;
+    nged::GraphPtr createRootGraph(nged::NodeGraphDoc* root, std::optional<Agis::ASTStrategy*> strategy = std::nullopt) const override;
     nged::NodePtr createNode(nged::Graph* parent, std::string_view type) const override;
     void listNodeTypes(nged::Graph* graph, void* context,
         void(*ret)(void* context, nged::StringView category, nged::StringView type, nged::StringView name)) const override;

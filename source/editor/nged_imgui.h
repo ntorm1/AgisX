@@ -111,6 +111,9 @@ public:
   float dpiScale() const override { return dpiScale_; }
 
   void update(float dt) override { dt_ = dt; }
+
+  auto* get_editor() const { return Base::editor(); }
+
   void draw() override
   {
     if (bool open = Base::isOpen()) {

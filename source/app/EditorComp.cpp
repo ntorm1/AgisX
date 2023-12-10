@@ -48,19 +48,4 @@ namespace AgisX
 		return _DemoApp->agreeToQuit();
 	}
 
-
-	//============================================================================
-	void EditorComp::info(std::string const& msg)
-	{
-		MessageHub::info(msg);
-	}
-
-
-//============================================================================
-	void EditorComp::error(std::string const& msg)
-	{
-		MessageHub::error(msg);
-	}
-
-
 }

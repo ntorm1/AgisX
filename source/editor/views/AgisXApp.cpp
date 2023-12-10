@@ -12,6 +12,7 @@ import <filesystem>;
 
 import SerializeModule;
 import HydraModule;
+import PortfolioModule;
 import ExchangeMapModule;
 import ASTStrategyModule;
 import AgisTimeUtils;
@@ -19,12 +20,14 @@ import AgisTimeUtils;
 import AgisXNodeFactory;
 import AgisXGraph;
 
-using namespace Agis;
 
 namespace AgisX
 {
 
-std::string formatDuration(const std::chrono::high_resolution_clock::time_point& start,
+
+//============================================================================
+std::string
+formatDuration(const std::chrono::high_resolution_clock::time_point& start,
     const std::chrono::high_resolution_clock::time_point& stop,
     int precision = 2) {
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -32,33 +35,25 @@ std::string formatDuration(const std::chrono::high_resolution_clock::time_point&
     if (elapsed.count() < 1000) {
         return std::to_string(elapsed.count()) + "us";
     }
-    else {
+    else if (elapsed.count() < 1000000) {
+        // Display with millisecond precision
         auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+        return std::to_string(elapsedMillis.count()) + "ms";
+    }
+    else {
+        // Display with second precision
         auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed);
-
-        if (elapsed.count() < 1000000) {
-            // Display with microsecond precision
-            return std::to_string(elapsed.count()) + "us";
-        }
-        else if (elapsedMillis.count() < 60000) {
-            // Display with millisecond precision
-            return std::to_string(elapsedMillis.count()) + "ms";
-        }
-        else {
-            // Display with second precision
-            std::ostringstream ss;
-            ss << std::fixed << std::setprecision(precision)
-                << static_cast<double>(elapsedSeconds.count()) + elapsedMillis.count() / 1000.0 << "s";
-            return ss.str();
-        }
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(precision)
+            << static_cast<double>(elapsedSeconds.count()) << "s";
+        return ss.str();
     }
 }
-
 
 //============================================================================
 AppState::AppState()
 {
-    _hydra = std::make_unique<Hydra>();
+    _hydra = std::make_unique<Agis::Hydra>();
 
     // set the exe path
     wchar_t buffer[MAX_PATH]; // Use wchar_t instead of char
@@ -102,6 +97,15 @@ AppState::get_portfolio(std::string const& id) const noexcept
 {
    return _hydra->get_portfolio(id);
 }
+
+
+//============================================================================
+Agis::ExchangeMap const&
+AppState::get_exchanges() const noexcept
+{
+    return _hydra->get_exchanges();
+}
+
 
 //============================================================================
 std::optional<Agis::Exchange const*>
@@ -158,25 +162,92 @@ AppState::__save_state() const noexcept
 
 
 //============================================================================
+std::optional<nged::GraphViewPtr>
+AppState::get_network_view()
+{
+    for (auto& [type, view] : _views)
+    {
+		if (type == "network") return view;
+	}
+    return std::nullopt;
+}
+
+
+//============================================================================
+void
+AppState::__load_strategies_from_disk() noexcept
+{
+    // find all files in the strategies directory
+    auto strategy_dir = _env_dir + "/strategies";
+    std::vector<std::string> ng_files;
+    for (const auto& entry : std::filesystem::directory_iterator(strategy_dir))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".ng")
+        {
+            ng_files.push_back(entry.path().string());
+        }
+    }
+    auto view = get_network_view().value();
+    auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+    auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+    bool loaded_successfully = true;
+    for (const auto& file : ng_files)
+    {
+        // get the file name 
+        auto file_path = std::filesystem::path(file);
+        auto file_name = file_path.stem().string();
+        nged::MessageHub::infof("Loading strategy: {}", file_name);
+        auto strategy_opt = _hydra->get_strategy_mut(file_name);
+        if (!strategy_opt)
+        {
+			nged::MessageHub::errorf("failed to get strategy: {}", file_name);
+            loaded_successfully = false;
+			continue;
+		}
+        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy_opt);
+        if (!ast_strategy)
+        {
+			nged::MessageHub::errorf("failed to cast strategy to AST type: {}", file_name);
+			loaded_successfully = false;
+            continue;
+		}
+        // load in .ng graph file and create the AST Strategy graph
+        view->editor()->set_strategy(ast_strategy);
+        view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
+        agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+        agisx_graph->strategy_node()->onSave();
+    }
+    if (loaded_successfully)
+    {
+        nged::MessageHub::infof("loaded {} strategies", ng_files.size());
+    }
+    else
+    {
+        nged::MessageHub::errorf("failed to load strategies");
+    }
+}
+
+//============================================================================
 void
 AppState::__load_state() noexcept
 {
     std::thread load_thread([this] {
         nged::MessageHub::infof("loading state from: {}", _env_dir);
         auto now = std::chrono::system_clock::now();
-        auto res = deserialize_hydra(_env_dir + "/hydra.json");
+        auto res = Agis::deserialize_hydra(_env_dir + "/hydra.json");
         if (res)
         {
             emit_lock(true);
             _hydra = std::move(res.value());
+            __load_strategies_from_disk();
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-            emit_on_hydra_restore();
-            nged::MessageHub::infof("Hydra loaded successfully in {} ms", std::to_string(elapsed.count()));
+            on_hydra_restore();
+            nged::MessageHub::infof("Hydra loaded in {} ms", std::to_string(elapsed.count()));
         }
         else
         {
-            nged::MessageHub::errorf("failed to save state: {}", res.error().what());
+            nged::MessageHub::errorf("failed to load state: {}", res.error().what());
         }
     });
     load_thread.detach();
@@ -189,7 +260,7 @@ AppState::__build() noexcept
 {
     std::thread build_thread([this] {
         nged::MessageHub::info("building hydra");
-        if (_hydra->get_state() != HydraState::INIT)
+        if (_hydra->get_state() != Agis::HydraState::INIT)
         {
             nged::MessageHub::error("Hydra has already been built");
             return;
@@ -203,7 +274,11 @@ AppState::__build() noexcept
         }
         update_time(0, _hydra->get_next_global_time());
         nged::MessageHub::infof("Hydra built successfully in {}", formatDuration(start,stop));
-    });
+        for (auto& [type, view] : _views)
+        {
+            view->on_hydra_build();
+        }
+        });
     build_thread.detach();
 }
 
@@ -212,10 +287,11 @@ AppState::__build() noexcept
 void
 AppState::__step() noexcept
 {
-    auto lock = _hydra->__aquire_write_lock();
     std::thread step_thread([this] {
+        auto portfolio_lock = _hydra->get_portfolio_mut("master").value()->__aquire_write_lock();
+        auto lock = _hydra->__aquire_write_lock();
         nged::MessageHub::debugf("Starting step, current time: {}", get_global_time());
-        if (_hydra->get_state() != HydraState::BUILT && _hydra->get_state() != HydraState::RUN)
+        if (_hydra->get_state() != Agis::HydraState::BUILT && _hydra->get_state() != Agis::HydraState::RUN)
         {
             nged::MessageHub::error("Hydra is not built or running");
             return;
@@ -232,6 +308,36 @@ AppState::__step() noexcept
     step_thread.detach();
 }
 
+
+//============================================================================
+void
+AppState::__run() noexcept
+{
+    std::thread run_thread([this] {
+        nged::MessageHub::debugf("Starting Run, current time: {}", get_global_time());
+        if (_hydra->get_state() != Agis::HydraState::BUILT && _hydra->get_state() != Agis::HydraState::RUN)
+        {
+            nged::MessageHub::error("Hydra is not built or running");
+            return;
+        }
+        auto start = std::chrono::high_resolution_clock::now();
+        auto res = _hydra->run();
+        auto stop = std::chrono::high_resolution_clock::now();
+        long long global_epoch = _hydra->get_global_time();
+        long long next_epoch = 0;
+        update_time(global_epoch, next_epoch);
+        nged::MessageHub::debugf("Run Complete, current time: {}", get_global_time());
+        nged::MessageHub::infof("Hydra Run successfully in {}", formatDuration(start, stop));
+    
+        // get number of seconds elapsed
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
+        double seconds = duration.count();
+        double candles = _hydra->get_exchanges().get_candle_count();
+        nged::MessageHub::infof("Candles {}", candles);
+        nged::MessageHub::infof("Candles Per Second {}", candles / seconds);
+    });
+    run_thread.detach();
+}
 
 //============================================================================
 void
@@ -255,6 +361,11 @@ AppState::__create_strategy(
     std::string const& exchange_id,
     double cash)
 {
+    if (_hydra->get_state() != Agis::HydraState::BUILT)
+    {
+        nged::MessageHub::errorf("Hydra must be in build state for new strategy");
+        return;
+    }
     auto exchange_opt  = _hydra->get_exchange_mut(exchange_id);
     auto portfolio_opt = _hydra->get_portfolio_mut(portfolio_id);
     if (!exchange_opt)
@@ -279,7 +390,7 @@ AppState::__create_strategy(
         }
         f.close();
     }
-    auto strategy = std::make_unique<ASTStrategy>(
+    auto strategy = std::make_unique<Agis::ASTStrategy>(
         strategy_id,
         cash,
         *exchange_opt.value(),
@@ -337,7 +448,7 @@ AppState::__create_portfolio(
     std::optional<Agis::Portfolio*> parent
 ) noexcept
 {
-    if (_hydra->get_state() != HydraState::BUILT)
+    if (_hydra->get_state() != Agis::HydraState::BUILT)
     {
         nged::MessageHub::error("Hydra is not built");
 		return;
@@ -359,27 +470,25 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
 {
     if (!strategy) return;
     nged::MessageHub::infof("selecting strategy: {}", (*strategy)->get_strategy_id());
-    for (auto& [type, view] : _views)
-    {
-        if (type != "network") continue;
-        auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
-        auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
-        auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
-        assert(strategy);
-        auto strategy_node = agisx_node_factory->createStrategyNode(
-            agisx_graph,
-            *ast_strategy
-        );
-        agisx_graph->set_strategy_node(strategy_node);
-        agisx_graph->add(strategy_node);
-        //agisx_graph->docRoot()->open(ast_strategy->graph_file_path());
-    }
+    
+    auto view =  get_network_view().value();
+    auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+    auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
+    auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
+    assert(strategy);
+    auto strategy_node = agisx_node_factory->createStrategyNode(
+        agisx_graph,
+        *ast_strategy
+    );
+    //agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
+    view->editor()->set_strategy(ast_strategy);
+    view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
     nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
 }
 
 //============================================================================
 void
-AppState::emit_on_hydra_restore()
+AppState::on_hydra_restore() noexcept
 {
     for (auto& [type, view] : _views)
     {
@@ -401,8 +510,28 @@ AppState::emit_lock(bool lock)
     }
 }
 
-void AppState::update_time(long long global_time, long long next_global_time)
+
+//============================================================================
+std::vector<long long> const&
+AppState::get_global_dt_index() const noexcept
 {
+    return _hydra->get_dt_index();
+}
+
+
+//============================================================================
+size_t
+AppState::get_current_index() const noexcept
+{
+    return _hydra->get_current_index();
+}
+
+
+void
+AppState::update_time(long long global_time, long long next_global_time)
+{
+    global_time_epoch = global_time;
+    next_global_time_epoch = next_global_time;
     auto t = Agis::epoch_to_str(global_time, "%Y-%m-%d %H:%M:%S");
     auto t_next = Agis::epoch_to_str(next_global_time, "%Y-%m-%d %H:%M:%S");
     set_global_time(t.value());

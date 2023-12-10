@@ -24,12 +24,6 @@
     <ClCompile Include="external\ImGuiFileDialog\ImGuiFileDialog.cpp">
       <Filter>external</Filter>
     </ClCompile>
-    <ClCompile Include="source\app\App.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\app\App.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\app\AppStyle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -126,9 +120,6 @@
     <ClCompile Include="source\editor\views\AgisXPrivate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\editor\views\AgisXPortfolioView.ixx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\editor\views\AgisXPrivatePortfolio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -136,6 +127,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\editor\nodes\AgisXStrategyNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\gmath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\app\App.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPlot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\views\AgisXPortfolioView.h">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -267,6 +273,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\editor\views\AgisXPrivatePortfolio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\app\App.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\views\AgisXPlot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\editor\views\AgisXAppComp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

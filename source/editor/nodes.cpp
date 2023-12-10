@@ -2,7 +2,11 @@
 
 
 //============================================================================
-nged::GraphPtr MyNodeFactory::createRootGraph(nged::NodeGraphDoc* root) const
+nged::GraphPtr
+MyNodeFactory::createRootGraph(
+    nged::NodeGraphDoc* root,
+    std::optional<Agis::ASTStrategy*> strategy
+) const
 {
     return std::make_shared<nged::Graph>(root, nullptr, "root");
 }

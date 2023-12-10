@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 namespace nged
 {
@@ -17,11 +18,17 @@ namespace AgisX
 	class Application;
 	class AppState;
 	class BaseComp;
+
 	class AgisXExchangeViewPrivate;
+	class AgisXPortfolioViewPrivate;
+	class AgisXAssetViewPrivate;
+	class AgisXPlotViewPrivate;
 	class AgisXExchangeView;
 	class AgisXPortfolioView;
-
+	class AgisXPlotViewPrivate;
 	class AgisXAssetReadNode;
 	class AgisXAssetOpNode;
 	class AgisXStrategyNode;
+	class AgisXAssetPlot;
+	class AgisXPortfolioPlot;
 }

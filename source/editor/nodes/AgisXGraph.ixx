@@ -1,6 +1,7 @@
 module;
 #include "../ngdoc.h"
 #include "../../app/AgisXDeclare.h"
+#include "AgisDeClare.h"
 
 export module AgisXGraph;
 
@@ -13,14 +14,19 @@ class AgisXNode;
 export class AgisXGraph : public nged::Graph
 {
 private:
-	nged::NodePtr _strategy_node = nullptr;
+	nged::Node* _strategy_node = nullptr;
 	nged::ItemID outputNodeID_ = nged::ID_None;
 	bool   deserializing_ = false;
 	
 protected:
 
 public:
-	AgisXGraph(nged::NodeGraphDoc* root, Graph* parent, nged::String name);
+	AgisXGraph(
+		nged::NodeGraphDoc* root,
+		Graph* parent,
+		nged::String name,
+		std::optional<Agis::ASTStrategy*> strategy = std::nullopt
+	);
 	//std::shared_ptr<AgisXStrategyNode> outputNode() const;
 
 	void clear() override;
@@ -31,8 +37,8 @@ public:
 	
 	void markNodeAndDownstreamDirty(nged::ItemID id);
 
-	void set_strategy_node(nged::NodePtr node) noexcept { _strategy_node = node; }
-	nged::NodePtr const strategy_node() const noexcept { return _strategy_node; }
+	void set_strategy_node(nged::Node* node) noexcept { _strategy_node = node; }
+	nged::Node* const strategy_node() const noexcept { return _strategy_node; }
 };
 
 

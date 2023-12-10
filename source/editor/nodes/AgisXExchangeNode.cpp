@@ -155,6 +155,7 @@ bool AgisXExchangeViewNode::deserialize(nged::Json const& json)
 		catch (...) {
 			return false;
 		}
+		return true;
 	}
 	return false;
 }
