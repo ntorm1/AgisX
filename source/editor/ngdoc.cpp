@@ -1281,10 +1281,10 @@ namespace nged {
         for (auto&& itemdata : json["items"]) {
             String type = itemdata["type"];
             auto uid = UID();
-            if (type == "StrategyNode")
-            {
-                continue;
-            }
+            //if (type == "StrategyNode")
+            //{
+            //    continue;
+            //}
             String       factory = itemdata["f"];
             GraphItemPtr newitem;
             if (factory.empty() || factory == "node") {
@@ -1308,6 +1308,11 @@ namespace nged {
         for (auto&& linkdata : json["links"]) {
             auto const& from = linkdata["from"];
             auto const& to = linkdata["to"];
+            if (!idmap.contains(from["id"]) || !idmap.contains(to["id"]))
+            {
+				msghub::errorf("failed to deserialize link {}", linkdata.dump(2));
+				continue;
+			}
             InputConnection  incon = { idmap.at(from["id"]), sint(from["port"]) };
             OutputConnection outcon = { idmap.at(to["id"]), sint(to["port"]) };
             newlinks.insert(outcon);
@@ -1823,14 +1828,17 @@ namespace nged {
 
     StringView NodeGraphDoc::title() const { return title_; }
 
-    bool NodeGraphDoc::open(String path, std::optional<NodePtr> output)
+    bool NodeGraphDoc::open(
+        String path,
+        std::optional<Agis::ASTStrategy*> strategy
+    )
         try {
         std::ifstream infile(path);
         if (!infile.good()) {
             msghub::errorf("failed to open \"{}\"", path);
             return false;
         }
-        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this, output));
+        auto newgraph = GraphPtr(nodeFactory_->createRootGraph(this, strategy));
         auto content = filterFileInput(String{ std::istreambuf_iterator<char>(infile), {} });
         if (!content.empty()){
             Json injson = Json::parse(content);

@@ -96,6 +96,7 @@ public:
 
 	AppComponentType type() const noexcept override{ return AppComponentType::PORTFOLIO_PLOT; }
 	void on_hydra_restore() noexcept;
+	const auto& get_tracers() const noexcept{ return _tracers; }
 
 private:
 	void add_tracer(std::string const& column);

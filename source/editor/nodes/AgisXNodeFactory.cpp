@@ -38,9 +38,11 @@ AgisxNodeFactory::AgisxNodeFactory() : _instance(nged::appState())
 
 //==================================================================================================
 nged::GraphPtr
-AgisxNodeFactory::createRootGraph(nged::NodeGraphDoc* doc, std::optional<NodePtr> output) const
+AgisxNodeFactory::createRootGraph(
+    nged::NodeGraphDoc* doc,
+    std::optional<Agis::ASTStrategy*> strategy) const
 {
-    return std::make_shared<AgisXGraph>(doc, nullptr, "root", output);
+    return std::make_shared<AgisXGraph>(doc, nullptr, "root", strategy);
 }
 
 
@@ -49,10 +51,14 @@ nged::NodePtr
 AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
 {
     // prevent strategy node creation
+    if (!strategy_node) 
+    {
+        nged::MessageHub::error("Strategy not set");
+        return nullptr;
+    }
     if (type == "StrategyNode")
     {
-        nged::MessageHub::error("Strategy node can not be created");
-        return nullptr;
+        return strategy_node;
     }
 
     // verify strategy node. 
@@ -84,9 +90,10 @@ AgisxNodeFactory::createNode(nged::Graph* parent, std::string_view type) const
 nged::NodePtr
 AgisxNodeFactory::createStrategyNode(nged::Graph* parent, Agis::ASTStrategy& strategy) const
 {
-    return std::make_shared<AgisXStrategyNode>(
+    strategy_node = std::make_shared<AgisXStrategyNode>(
         parent, "StrategyNode", "Strategy", strategy, 1
     );
+    return strategy_node;
 }
 
 

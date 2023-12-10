@@ -188,7 +188,6 @@ AppState::__load_strategies_from_disk() noexcept
         }
     }
     auto view = get_network_view().value();
-    auto doc = view->doc();
     auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
     auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
     bool loaded_successfully = true;
@@ -212,22 +211,11 @@ AppState::__load_strategies_from_disk() noexcept
 			loaded_successfully = false;
             continue;
 		}
-        auto strategy_node = agisx_node_factory->createStrategyNode(
-            agisx_graph,
-            *ast_strategy
-        );
         // load in .ng graph file and create the AST Strategy graph
-        agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
-        strategy_node->onSave();
-    }
-    auto graph = agisx_graph->docRoot()->root();
-    // update the new graph pointer for each view
-    for (auto& [type, view] : _views)
-    {
-        // create weak pointer from the shared graph pointer
-        auto weak_graph = std::weak_ptr<nged::Graph>(graph);
-        view->reset(weak_graph);
-        //
+        view->editor()->set_strategy(ast_strategy);
+        view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
+        agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
+        agisx_graph->strategy_node()->onSave();
     }
     if (loaded_successfully)
     {
@@ -251,6 +239,7 @@ AppState::__load_state() noexcept
         {
             emit_lock(true);
             _hydra = std::move(res.value());
+            __load_strategies_from_disk();
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
             on_hydra_restore();
@@ -285,7 +274,11 @@ AppState::__build() noexcept
         }
         update_time(0, _hydra->get_next_global_time());
         nged::MessageHub::infof("Hydra built successfully in {}", formatDuration(start,stop));
-    });
+        for (auto& [type, view] : _views)
+        {
+            view->on_hydra_build();
+        }
+        });
     build_thread.detach();
 }
 
@@ -487,16 +480,9 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
         agisx_graph,
         *ast_strategy
     );
-    agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
-    auto graph = agisx_graph->docRoot()->root();
-    
-    // update the new graph pointer for each view
-    for (auto& [type, view] : _views)
-    {
-        // create weak pointer from the shared graph pointer
-        auto weak_graph = std::weak_ptr<nged::Graph>(graph);
-        view->reset(weak_graph);
-    }
+    //agisx_graph->docRoot()->open(ast_strategy->graph_file_path(), strategy_node);
+    view->editor()->set_strategy(ast_strategy);
+    view->editor()->loadDocInto(ast_strategy->graph_file_path(), view->doc());
     nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
 }
 

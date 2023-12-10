@@ -27,7 +27,7 @@ private:
 	Agis::ASTStrategy const& strategy() const noexcept { return _strategy; }
 	Agis::ASTStrategy& _strategy;
 	mutable std::optional<AgisX::AgisXAllocationNode const*> _alloc_input = std::nullopt;
-	double _alloc_epsilon = 0.0001;
+	double _alloc_epsilon = 0.001;
 public:
 	AgisXStrategyNode(nged::Graph* parent,
 		nged::StringView type,

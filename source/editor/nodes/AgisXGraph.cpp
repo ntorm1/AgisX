@@ -6,6 +6,7 @@ module;
 module AgisXGraph;
 
 import AgisXNode;
+import AgisXNodeFactory;
 import AgisXStrategyNodeMod;
 
 using namespace nged;
@@ -18,20 +19,24 @@ AgisXGraph::AgisXGraph(
     NodeGraphDoc* root,
     Graph* parent,
     String name,
-    std::optional<NodePtr> outputNode)
+    std::optional<Agis::ASTStrategy*> strategy)
     : Graph(root, parent, name)
 {
-    if (!outputNode)
+    if (!strategy)
     {
         nged::msghub::error("strategy is null");
         return;
     }
     nged::msghub::info("building new AgisXGraph");
     root->setDeserializeInplace(false);
-    set_strategy_node((*outputNode).get());
-    (*outputNode)->setParent(this);
-    outputNodeID_ = docRoot()->addItem(*outputNode);
-    (*outputNode)->resetID(outputNodeID_);
+    auto node_factory = static_cast<AgisX::AgisxNodeFactory const*>(this->docRoot()->nodeFactory());
+    auto output_node = node_factory->createStrategyNode(
+        this, *(strategy.value())
+    );
+    set_strategy_node(output_node.get());
+    output_node->setParent(this);
+    outputNodeID_ = docRoot()->addItem(output_node);
+    output_node->resetID(outputNodeID_);
     items_.insert(outputNodeID_);
     nged::msghub::info("AgisXGraph build complete");
 }

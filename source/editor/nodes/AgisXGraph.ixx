@@ -25,7 +25,7 @@ public:
 		nged::NodeGraphDoc* root,
 		Graph* parent,
 		nged::String name,
-		std::optional<nged::NodePtr> outputNode = std::nullopt
+		std::optional<Agis::ASTStrategy*> strategy = std::nullopt
 	);
 	//std::shared_ptr<AgisXStrategyNode> outputNode() const;
 

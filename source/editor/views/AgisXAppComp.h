@@ -40,6 +40,7 @@ public:
 
 	virtual AppComponentType type() const noexcept = 0;
 	virtual void on_hydra_restore() noexcept = 0;
+	virtual void on_hydra_build() noexcept {}
 };
 
 }

@@ -56,6 +56,20 @@ AgisXPortfolioViewPrivate::on_portfolio_click(const Agis::Portfolio& portfolio)
 
 //============================================================================
 void
+AgisXPortfolioViewPrivate::on_hydra_build() noexcept
+{
+    // if the plot was init before hydra was build, it does not have the correct 
+    // datetime index so force a rebuild of it on build
+    if (_plot)
+    {
+        auto& tracers = (*_plot)->get_tracers();
+        delete _plot.value();
+        _plot = new AgisX::AgisXPortfolioPlot(app(), tracers, this);
+    }
+}
+
+//============================================================================
+void
 AgisXPortfolioViewPrivate::on_strategy_click(const Agis::Strategy& strategy)
 {
     if (_selected_strategy && *_selected_strategy == &strategy) {
@@ -447,5 +461,6 @@ AgisXPortfolioViewPrivate::on_hydra_restore() noexcept
     }
     _plot = std::nullopt;
 }
+
 
 } // namespace AgisX

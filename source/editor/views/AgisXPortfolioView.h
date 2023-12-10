@@ -28,6 +28,7 @@ public:
     void onGraphModified() override {}
 
     void on_hydra_restore() override;
+    void on_hydra_build() noexcept override;
     void drawContent();
 };
 

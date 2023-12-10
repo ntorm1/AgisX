@@ -35,8 +35,28 @@ public:
     {
         // Progress value (between 0.0 and 1.0)
         auto progress = static_cast<float>(_app_state.get_current_index()) / _app_state.get_global_dt_index().size();
+
+        // Calculate the color based on the progress percentage
+        ImVec4 color;
+        if (progress < 0.5f)
+        {
+            // Yellow to orange transition
+            color = ImVec4(1.0f, 1.0f - 2 * progress, 0.0f, 1.0f);
+        }
+        else
+        {
+            // Orange to green transition
+            color = ImVec4(2 * (1.0f - progress), 2 * progress - 1.0f, 0.0f, 1.0f);
+        }
+
+        // Push the modified color for the progress bar
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, color);
+
         // Draw the progress bar
         ImGui::ProgressBar(progress);
+
+        // Pop the color changes
+        ImGui::PopStyleColor();
     }
 
     void drawContent() 

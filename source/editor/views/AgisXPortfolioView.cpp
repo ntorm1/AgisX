@@ -32,6 +32,14 @@ AgisXPortfolioView::on_hydra_restore()
     write_unlock();
 }
 
+
+//============================================================================
+void
+AgisXPortfolioView::on_hydra_build() noexcept
+{
+    _p->on_hydra_build();
+}
+
 //============================================================================
 void
 AgisXPortfolioView::drawContent()

@@ -22,14 +22,14 @@ export struct AgisXNodeDef
 export class AgisxNodeFactory: public nged::NodeFactory
 {
 private:
-
+	mutable nged::NodePtr strategy_node = nullptr;
 public:
 	AgisxNodeFactory();
 	AgisX::AppState& _instance;
 
 	nged::GraphPtr createRootGraph(
 		nged::NodeGraphDoc* doc,
-		std::optional<nged::NodePtr> output = std::nullopt)
+		std::optional<Agis::ASTStrategy*> strategy = std::nullopt)
 		const override;
 	nged::NodePtr createNode(nged::Graph* parent, std::string_view type) const override;
 	nged::NodePtr createStrategyNode(

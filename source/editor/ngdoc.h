@@ -8,6 +8,7 @@
 
 #include "nged_declare.h"
 #include "../app/AgisXDeclare.h"
+#include "AgisDeclare.h"
 
 #include <shared_mutex>
 #include <random>
@@ -533,7 +534,7 @@ namespace nged {
         virtual ~NodeFactory() {}
 
         // node model
-        virtual GraphPtr createRootGraph(NodeGraphDoc* doc, std::optional<NodePtr> = std::nullopt) const = 0;
+        virtual GraphPtr createRootGraph(NodeGraphDoc* doc, std::optional<Agis::ASTStrategy*> strategy = std::nullopt) const = 0;
         virtual NodePtr  createNode(Graph* parent, StringView type) const = 0;
 
         // list of available node types
@@ -1209,7 +1210,7 @@ namespace nged {
         StringView title() const;
         StringView savePath() const { return savePath_; }
         GraphPtr   root() const { return root_; }
-        bool       open(String path, std::optional<NodePtr> output = std::nullopt);
+        bool       open(String path, std::optional<Agis::ASTStrategy*> strategy = std::nullopt);
         bool       save();              /// save to `savePath_`
         bool       saveAs(String path); /// save to `path` and remember `savePath_`
         bool       saveTo(String path); /// save to `path` without rembering `savePath_`

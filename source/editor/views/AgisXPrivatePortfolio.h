@@ -31,8 +31,9 @@ public:
 
 	void on_portfolio_click(Agis::Portfolio const& portfolio);
 	void on_strategy_click(Agis::Strategy const& strategy);
-	void on_hydra_restore() noexcept override;
 
+	void on_hydra_restore() noexcept override;
+	void on_hydra_build() noexcept override;
 
 };
 
