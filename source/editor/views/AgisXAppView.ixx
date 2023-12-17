@@ -89,6 +89,10 @@ public:
                 _app_state.__run();
             }
             ImGui::SameLine();
+            if (ImGui::Button("Pause"))
+            {
+                _app_state.__interupt();
+            }
             if (ImGui::Button("Reset"))
             {
                 _app_state.__reset();

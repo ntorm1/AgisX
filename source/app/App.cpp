@@ -12,8 +12,6 @@
 import SerializeModule;
 import AgisTimeUtils;
 
-import <filesystem>;
-
 using namespace Agis;
 
 namespace AgisX
@@ -35,7 +33,7 @@ Application::~Application()
 
 
 //============================================================================
-void Application::set_dockspace_id(ImGuiID mainDockID_)
+void Application::set_dockspace_id(unsigned int mainDockID_)
 {
 
     editor_comp->set_dockspace_id(mainDockID_);

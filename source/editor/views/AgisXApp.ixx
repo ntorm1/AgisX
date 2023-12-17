@@ -22,7 +22,8 @@ public:
 	AppState();
 	~AppState();
 
-	void on_hydra_restore() noexcept;
+	template <typename MemberFunction>
+	void emit_hydra_event(MemberFunction m, const char* msg) noexcept;
 
 	std::optional<Agis::Portfolio*> get_portfolio_mut(std::string const& id) const noexcept;
 	std::optional<Agis::Portfolio const*> get_portfolio(std::string const& id) const noexcept;
@@ -38,6 +39,7 @@ public:
 	void __step() noexcept;
 	void __run() noexcept;
 	void __reset() noexcept;
+	void __interupt() noexcept;
 
 	void __create_strategy(
 		std::string const& strategy_id,
@@ -102,7 +104,6 @@ private:
 	std::unique_ptr<Agis::Hydra> _hydra;
 	std::unordered_map<std::string, nged::GraphViewPtr> _views;
 };
-
 
 
 }

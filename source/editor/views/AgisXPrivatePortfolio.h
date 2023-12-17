@@ -1,6 +1,4 @@
 #pragma once
-
-
 #include "AgisDeclare.h"
 #include "../../app/AgisXDeclare.h"
 #include "AgisXAppComp.h"
@@ -25,6 +23,7 @@ public:
 	void draw_portfolio_tree(Agis::Portfolio const& portfolio);
 	void draw_portfolio_node(Agis::Portfolio const& portfolio);
 	void draw_strategy();
+	void draw_portfolio();
 	void draw_new_portfolio();
 	void draw_new_strategy();
 	void draw_book(Agis::Portfolio const& portfolio);
@@ -34,6 +33,7 @@ public:
 
 	void on_hydra_restore() noexcept override;
 	void on_hydra_build() noexcept override;
+	void on_hydra_reset() noexcept override {};
 
 };
 

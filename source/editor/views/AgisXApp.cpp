@@ -243,7 +243,7 @@ AppState::__load_state() noexcept
             __load_strategies_from_disk();
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-            on_hydra_restore();
+            emit_hydra_event(&nged::GraphView::on_hydra_restore, "hydra_restore");
             nged::MessageHub::infof("Hydra loaded in {} ms", std::to_string(elapsed.count()));
         }
         else
@@ -300,11 +300,15 @@ AppState::__step() noexcept
         auto start = std::chrono::high_resolution_clock::now();
         auto res = _hydra->step();
         auto stop = std::chrono::high_resolution_clock::now();
+
         long long global_epoch = _hydra->get_global_time();
         long long next_epoch = _hydra->get_next_global_time();
         update_time(global_epoch, next_epoch);
-        nged::MessageHub::debugf("Step Complete, current time: {}", get_global_time());
+        
+        portfolio_lock.unlock();
+        emit_hydra_event(&nged::GraphView::on_hydra_step, "hydra_step");
         nged::MessageHub::infof("Hydra step successfully in {}", formatDuration(start, stop));
+        nged::MessageHub::debugf("Step Complete, current time: {}", get_global_time());
     });
     step_thread.detach();
 }
@@ -351,6 +355,14 @@ AppState::__reset() noexcept
         return;
     }
 	update_time(0, _hydra->get_next_global_time());
+    emit_hydra_event(&nged::GraphView::on_hydra_reset, "hydra_step");
+}
+
+
+//============================================================================
+void AppState::__interupt() noexcept
+{
+    _hydra->interupt();
 }
 
 
@@ -476,7 +488,11 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
     auto agisx_graph = dynamic_cast<AgisXGraph*>(view->graph().get());
     auto agisx_node_factory = dynamic_cast<AgisxNodeFactory const*>(agisx_graph->docRoot()->nodeFactory());
     auto ast_strategy = dynamic_cast<Agis::ASTStrategy*>(*strategy);
-    assert(strategy);
+    if(!ast_strategy)
+	{
+		nged::MessageHub::errorf("failed to cast strategy to AST type: {}", (*strategy)->get_strategy_id());
+		return;
+	}
     auto strategy_node = agisx_node_factory->createStrategyNode(
         agisx_graph,
         *ast_strategy
@@ -488,15 +504,16 @@ AppState::emit_on_strategy_select(std::optional<Agis::Strategy*> strategy)
     nged::MessageHub::infof("strategy: {} selected", (*strategy)->get_strategy_id());
 }
 
+
 //============================================================================
-void
-AppState::on_hydra_restore() noexcept
+template <typename MemberFunction> void
+AppState::emit_hydra_event(MemberFunction member_func, const char* msg) noexcept
 {
     for (auto& [type, view] : _views)
     {
-        nged::MessageHub::debugf("emitting on_hydra_restore for {}", type);
-        view->on_hydra_restore();
-        nged::MessageHub::debugf("on_hydra_restore complete for {}", type);
+        nged::MessageHub::debugf("emitting {} for {}", type, msg);
+        (view.get()->*member_func)();
+        nged::MessageHub::debugf("{} complete for {}", type, msg);
     }
 }
 

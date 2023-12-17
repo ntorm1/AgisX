@@ -3,6 +3,7 @@
 #include "AgisDeclare.h"
 #include "../../app/AgisXDeclare.h"
 #include "AgisXAppComp.h"
+#include <tbb/concurrent_vector.h>
 
 #include <optional>
 #include <vector>
@@ -12,6 +13,43 @@
 
 namespace AgisX
 {
+
+
+struct OrderBuffer : public AppComponent
+{
+public:
+	OrderBuffer(
+		AgisX::AppState& app_state,
+		AgisX::AppComponent* parent,
+		Agis::Portfolio const& portfolio,
+		size_t asset_index
+	);
+
+	AppComponentType type() const noexcept override { return AppComponentType::ORDER_BUFFER; }
+	void on_hydra_restore() noexcept override {}
+	void on_hydra_step() noexcept override;
+	void on_hydra_reset() noexcept override;
+	
+	auto get_max_units() const noexcept{ return max_units; }
+	void set_asset_index(size_t index) noexcept;
+
+	auto begin() const noexcept {
+		return order_buffer.cbegin();
+	}
+	auto end() const noexcept{
+		return order_buffer.cend();
+	}
+
+private:
+
+	size_t historical_index = 0;
+	double max_units = 0;
+	std::vector<Agis::Order*> order_buffer;
+	Agis::Portfolio const& portfolio;
+	tbb::concurrent_vector<Agis::Order*> const& order_history;
+	size_t asset_index;
+
+};
 
 
 //============================================================================
@@ -30,9 +68,18 @@ public:
 	void draw();
 	void draw_table();
 
+	void toggle_order_buffer() noexcept;
+	auto const& get_order_buffer() const noexcept{ return _order_buffer; }
+	const auto& get_asset_id() const noexcept{ return _asset_id; }
+
 	AppComponentType type() const noexcept override{ return AppComponentType::ASSET_VIEW; }
 	void on_hydra_restore() noexcept override {}
+	void on_hydra_step() noexcept override;
+	void on_hydra_reset() noexcept override;
 
+
+private:
+	std::optional<UniquePtr<OrderBuffer>> _order_buffer = std::nullopt;
 	Agis::Asset const& _asset;
 	AgisX::AgisXAssetPlot* _plot_view;
 	std::vector<std::string> _columns;
@@ -59,6 +106,8 @@ public:
 
 	AppComponentType type() const noexcept override { return AppComponentType::EXCHANGE_VIEW; }
 	void on_hydra_restore() noexcept override;
+	void on_hydra_step() noexcept override;
+	void on_hydra_reset() noexcept override;
 
 	std::optional<AgisXAssetViewPrivate*> get_asset_view() const noexcept;
 	bool set_selected_asset(std::string const& asset_id);

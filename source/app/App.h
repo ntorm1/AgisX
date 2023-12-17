@@ -1,9 +1,6 @@
 #pragma once
 #include "AgisDeclare.h"
 #include "AgisXDeclare.h"
-#include "BaseComp.h"
-
-#include "imgui.h"
 
 namespace AgisX 
 {
@@ -18,7 +15,7 @@ public:
 	Application();
 	~Application();
 	bool& get_show_demo_window() { return show_demo_window; }
-	void set_dockspace_id(ImGuiID mainDockID_);
+	void set_dockspace_id(unsigned int mainDockID_);
 	void init();
 	bool agree_to_quit();
 	void render();

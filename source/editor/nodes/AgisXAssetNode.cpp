@@ -159,8 +159,15 @@ void AgisXAssetOpNode::render_inspector() noexcept
 	ImGui::SetItemDefaultFocus();
 	for(auto& [opp_str, opp] : Agis::AST::AssetLambdaNode::AgisOperatorMap()) {
 		if (ImGui::RadioButton(opp_str.c_str(), _opp == opp)) {
+			if (_opp != opp)
+			{
+				auto current_name = name();
+				rename(opp_str.c_str(), current_name);
+			}
 			_opp = opp;
 			setDirty(true);
+
+			
 		}
 	}
 }

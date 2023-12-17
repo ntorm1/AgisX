@@ -1,3 +1,4 @@
+#include <tbb/concurrent_hash_map.h>
 #include "AgisXPrivatePortfolio.h"
 #include "AgisXPlot.h"
 #include <imgui.h>
@@ -231,6 +232,27 @@ void AgisXPortfolioViewPrivate::draw_strategy()
 
 
 //============================================================================
+void AgisXPortfolioViewPrivate::draw_portfolio()
+{
+    if (!_selected_portfolio)
+    {
+		return;
+    }
+    auto& p = *(_selected_portfolio.value());
+    ImGui::Text("Portfolio ID: %s", p.get_portfolio_id().c_str());
+    ImGui::Separator();
+    ImGui::Text("Tracers");
+
+    auto const& tracers = p.get_tracers();
+    bool has_order = tracers.has(Agis::Tracer::ORDERS);
+	if (ImGui::Checkbox("Orders", &has_order))
+	{
+		p.set_tracer(Agis::Tracer::ORDERS);
+	}
+}
+
+
+//============================================================================
 void
 AgisXPortfolioViewPrivate::draw_new_portfolio()
 {
@@ -374,13 +396,17 @@ AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
         ImGui::TableSetupColumn("Asset ID", ImGuiTableColumnFlags_NoHide);
         ImGui::TableSetupColumn("Strategy ID", ImGuiTableColumnFlags_NoHide);
         ImGui::TableSetupColumn("Average Cost");
-        ImGui::TableSetupColumn("NLV");
+        ImGui::TableSetupColumn("Units");
         ImGui::TableSetupColumn("Unrealized PnL");
         ImGui::TableSetupColumn("Realized PnL");
         ImGui::TableHeadersRow();
 
-        for (auto const& [asset_index, position] : positions)
+        for (auto it = positions.begin(); it != positions.end(); ++it)
         {
+            // evaluate the indivual positions and allow for any orders that are generated
+            // as a result of the new valuation
+            auto const& position = it->second;
+            auto const& asset_index = it->first;
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             auto asset_id = exchange_map.get_asset_id(asset_index).value();
@@ -390,7 +416,7 @@ AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
             ImGui::TableNextColumn();
             ImGui::Text("%.*f", decimalPlaces, position->get_avg_price());
             ImGui::TableNextColumn();
-            ImGui::Text("%.*f", decimalPlaces, position->get_nlv());
+            ImGui::Text("%.*f", decimalPlaces, position->get_units());
             ImGui::TableNextColumn();
             ImGui::Text("%.*f", decimalPlaces, position->get_unrealized_pnl());
             ImGui::TableNextColumn();
@@ -408,7 +434,7 @@ AgisXPortfolioViewPrivate::draw_book(Agis::Portfolio const& portfolio)
                     ImGui::TableNextColumn();
 					ImGui::Text("%.*f", decimalPlaces, trade->get_avg_price());
 					ImGui::TableNextColumn();
-					ImGui::Text("%.*f", decimalPlaces, trade->get_nlv());
+					ImGui::Text("%.*f", decimalPlaces, trade->get_units());
 					ImGui::TableNextColumn();
 					ImGui::Text("%.*f", decimalPlaces, trade->get_unrealized_pnl());
 					ImGui::TableNextColumn();
@@ -434,14 +460,19 @@ AgisXPortfolioViewPrivate::draw_portfolio_tree(Agis::Portfolio const& portfolio)
     {
         draw_portfolio_node(portfolio);
     }
-    if (ImGui::CollapsingHeader("Strategy"))
-    {
-        draw_strategy();
-    }
     if (ImGui::CollapsingHeader("Portfolio Book"))
     {
         draw_book(portfolio);
     }
+    if (ImGui::CollapsingHeader("Strategy"))
+    {
+        draw_strategy();
+    }
+    if (ImGui::CollapsingHeader("Portfolio"))
+    {
+        draw_portfolio();
+    }
+
 }
 
 

@@ -5,8 +5,13 @@
 #include <implot.h>
 
 import ExchangeModule;
+import OrderModule;
+import PortfolioModule;
 import AssetModule;
 import AgisTimeUtils;
+
+import AgisXApp;
+
 
 static ImGuiTableFlags ASSET_TABLE_FLAGS =
 ImGuiTableFlags_ScrollY |
@@ -67,6 +72,23 @@ AgisXExchangeViewPrivate::on_hydra_restore() noexcept
     asset_view = std::nullopt;
     selected_exchange = std::nullopt;
     asset_ids.clear();
+    if (asset_view) (*asset_view)->on_hydra_restore();
+}
+
+
+//============================================================================
+void
+AgisXExchangeViewPrivate::on_hydra_step() noexcept
+{
+    if (asset_view) (*asset_view)->on_hydra_step();
+}
+
+
+//============================================================================
+void
+AgisXExchangeViewPrivate::on_hydra_reset() noexcept
+{
+    if (asset_view) (*asset_view)->on_hydra_reset();
 }
 
 
@@ -92,7 +114,7 @@ std::optional<std::string>
 AgisXExchangeViewPrivate::get_selected_asset_id()
 {
 	if(!asset_view) return std::nullopt;
-	return (*asset_view)->_asset_id;
+	return (*asset_view)->get_asset_id();
 }
 
 
@@ -220,6 +242,93 @@ void AgisXAssetViewPrivate::draw_table()
         asset_table_context_menu();
         ImGui::EndTable();
     }
+}
+
+
+//============================================================================
+void AgisXAssetViewPrivate::toggle_order_buffer() noexcept
+{
+    if (_order_buffer) _order_buffer = std::nullopt;
+	else _order_buffer = std::make_unique<OrderBuffer>(
+		app(),
+		this,
+        *(app().get_portfolio("master").value()),
+        _asset.get_index()
+
+	);
+}
+
+
+//============================================================================
+void
+AgisXAssetViewPrivate::on_hydra_step() noexcept
+{
+    if (_order_buffer) (*_order_buffer)->on_hydra_step();
+}
+
+
+//============================================================================
+void
+AgisXAssetViewPrivate::on_hydra_reset() noexcept
+{
+    if (_order_buffer) (*_order_buffer)->on_hydra_reset();
+}
+
+
+//============================================================================
+OrderBuffer::OrderBuffer(
+    AgisX::AppState& _app_state,
+    AgisX::AppComponent* _parent,
+    Agis::Portfolio const& _portfolio,
+    size_t _asset_index
+) :
+    AppComponent(_app_state, _parent),
+    portfolio(_portfolio),
+    order_history(_portfolio.order_history()),
+    asset_index(_asset_index)
+{
+    auto l = portfolio.__aquire_read_lock();
+    for (auto& order : order_history)
+    {
+        if (asset_index != order->get_asset_index()) continue;
+        order_buffer.push_back(order);
+        historical_index++;
+
+        if (abs(order->get_units()) > max_units)
+        {
+            max_units = abs(order->get_units());
+        }
+    }
+}
+
+
+//============================================================================
+void
+OrderBuffer::on_hydra_step() noexcept
+{
+    auto l = portfolio.__aquire_read_lock();
+    for (size_t i = historical_index; i < order_history.size(); i++)
+    {
+        auto& order = order_history[i];
+        if (asset_index != order->get_asset_index()) continue;
+        order_buffer.push_back(order);
+        historical_index++;
+
+        if (abs(order->get_units()) > max_units)
+        {
+            max_units = abs(order->get_units());
+        }
+    }
+}
+
+
+//============================================================================
+void
+OrderBuffer::on_hydra_reset() noexcept
+{
+    order_buffer.clear();
+	historical_index = 0;
+	max_units = 0;
 }
 
 }

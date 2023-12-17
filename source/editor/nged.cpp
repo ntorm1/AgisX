@@ -1239,6 +1239,8 @@ NodeGraphEditor::DocPtr NodeGraphEditor::openDoc(StringView path)
 
 bool NodeGraphEditor::saveDoc(DocPtr doc)
 {
+  if(!doc)
+	return false;
   bool succeed = false;
   if (doc->savePath().empty()) {
     char* path   = nullptr;

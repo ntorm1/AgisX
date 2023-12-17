@@ -1,12 +1,9 @@
 #pragma once
-
-
 #include <optional>
 #include <vector>
 #include <string>
 #include <shared_mutex>
 #include <unordered_map>
-
 
 #include "AgisDeclare.h"
 #include "../../app/AgisXDeclare.h"
@@ -51,14 +48,13 @@ private:
 };
 
 
-
 //============================================================================
 class AgisXAssetPlot : public AgisXPlotViewPrivate
 {
 public:
 	AgisXAssetPlot(
 		AgisX::AppState& app_state,
-		AppComponent const* parent,
+		AgisXAssetViewPrivate* parent,
 		Agis::Asset const& asset
 	);
 
@@ -73,11 +69,15 @@ public:
 	void draw_plot() noexcept override;
 
 	AppComponentType type() const noexcept override { return AppComponentType::ASSET_PLOT; }
-	void on_hydra_restore() noexcept {}
+	void on_hydra_restore() noexcept override {}
+	void on_hydra_step() noexcept override;
 
 private:
+	bool _plot_orders = false;
 	Agis::Asset const& _asset;
+	AgisXAssetViewPrivate& _asset_view;
 	std::unordered_map<std::string, std::vector<double> const> _asset_data;
+	std::vector<Agis::Order*> _historical_orders;
 
 };
 

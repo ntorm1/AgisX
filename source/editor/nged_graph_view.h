@@ -52,9 +52,10 @@ public:
 	virtual void  draw() = 0;
 
 	virtual void on_hydra_restore() { _mutex.unlock(); };
+	virtual void on_hydra_step() noexcept {};
 	virtual void on_hydra_build() noexcept {};
-	virtual void on_step() {};
-	virtual void on_reset() {};
+	virtual void on_hydra_reset() noexcept {};
+
 
 	void write_lock()
 	{

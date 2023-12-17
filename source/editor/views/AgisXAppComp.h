@@ -14,7 +14,8 @@ enum AppComponentType
 	PORTFOLIO_VIEW,
 	ASSET_PLOT,
 	ASSET_VIEW,
-	EXCHANGE_VIEW
+	EXCHANGE_VIEW,
+	ORDER_BUFFER
 };
 
 class AppComponent
@@ -40,7 +41,9 @@ public:
 
 	virtual AppComponentType type() const noexcept = 0;
 	virtual void on_hydra_restore() noexcept = 0;
+	virtual void on_hydra_reset() noexcept {}
 	virtual void on_hydra_build() noexcept {}
+	virtual void on_hydra_step() noexcept {}
 };
 
 }

@@ -1,14 +1,21 @@
 #include <imgui.h>
 #include <implot.h>
-#include "AgisXPlot.h"
 
+#include "AgisXPlot.h"
+#include "AgisXPrivate.h"
 
 import AgisXApp;
+import OrderModule;
 import AssetModule;
 
 
 namespace AgisX
 {
+
+static double nanosecond_epoch_to_second_epoch(long long ns_epoch)
+{
+	return static_cast<double>(ns_epoch / 1000000000.0);
+}
 
 //============================================================================
 AgisXPlotViewPrivate::AgisXPlotViewPrivate(
@@ -21,7 +28,7 @@ AgisXPlotViewPrivate::AgisXPlotViewPrivate(
     for (size_t i = 0; i < ns_epoch_index.size(); i++)
     {
         long long ns_epoch = ns_epoch_index[i];
-        double s_epoch = static_cast<double>(ns_epoch / 1000000000.0);
+        double s_epoch = nanosecond_epoch_to_second_epoch(ns_epoch);
         _second_epoch_index.push_back(s_epoch);
     }
 }
@@ -30,10 +37,11 @@ AgisXPlotViewPrivate::AgisXPlotViewPrivate(
 //============================================================================
 AgisXAssetPlot::AgisXAssetPlot(
     AgisX::AppState& app_state,
-    AppComponent const* parent,
+    AgisXAssetViewPrivate* parent,
     Agis::Asset const& asset
-) : AgisXPlotViewPrivate(app_state, parent, asset.get_dt_index()),
-    _asset(asset)
+) : AgisXPlotViewPrivate(app_state, this, asset.get_dt_index()),
+_asset(asset),
+_asset_view(*parent)
 {
 }
 
@@ -45,8 +53,8 @@ void AgisXPortfolioPlot::draw_plot() noexcept
     {
         if (!second_epoch_index().size())
         {
-			ImPlot::EndPlot();
-			return;
+            ImPlot::EndPlot();
+            return;
         }
         plot_base_data(_tracers.get_current_index());
         if (ImPlot::BeginLegendPopup("Right Click Me")) {
@@ -61,6 +69,15 @@ void AgisXPortfolioPlot::draw_plot() noexcept
 void
 AgisXAssetPlot::draw_plot() noexcept
 {
+    // add collapsing section for plot overlays
+    if (ImGui::CollapsingHeader("Plot Overlays"))
+    {
+        if (ImGui::Checkbox("Orders", &_plot_orders))
+        {
+            _asset_view.toggle_order_buffer();
+        }
+    }
+
     if (ImPlot::BeginPlot(_asset.get_id().c_str()))
     {
         if (!second_epoch_index().size())
@@ -69,6 +86,7 @@ AgisXAssetPlot::draw_plot() noexcept
             return;
         }
         plot_base_data();
+
         // plot the current close price as a point provided close col is plotted and asset is streaming
         if (
             data().count(_asset.get_close_column())
@@ -83,13 +101,62 @@ AgisXAssetPlot::draw_plot() noexcept
             ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(1, 0, 0, 1));
             auto const& close_col = data().at(_asset.get_close_column());
             double current_close = close_col[streaming_index];
-            ImPlot::PlotScatter("Close", &current_time, &current_close, 1);
+            ImPlot::PlotScatter("Current Close", &current_time, &current_close, 1);
             ImPlot::PopStyleVar(3);
             ImPlot::PopStyleColor();
+        }
+
+        // plot the order buff 
+        if (_plot_orders)
+        {
+            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 3);
+            auto const& b = *(_asset_view.get_order_buffer().value());
+            double max_units = b.get_max_units();
+            for (auto const& order : b)
+            {
+                double units = order->get_units();
+               
+                // if units > 0 then it's a buy order color green else color red
+                if (units > 0)
+                {
+                    ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0, 1, 0, 1));
+                }
+                else
+                {
+                    ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(1, 0, 0, 1));
+                }
+
+                // if not filled, plot as cross else plot as circle
+                if (order->get_order_state() != Agis::OrderState::FILLED)
+                {
+                    ImPlot::PushStyleVar(ImPlotStyleVar_Marker, ImPlotMarker_Cross);
+				}
+				else
+				{
+					ImPlot::PushStyleVar(ImPlotStyleVar_Marker, ImPlotMarker_Circle);
+                }
+
+                auto size_scale = static_cast<float>(6 * abs(units) / max_units);
+				ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, size_scale);
+				double time = nanosecond_epoch_to_second_epoch(order->get_fill_time());
+				double price = order->get_fill_price();
+                ImPlot::PlotScatter("Orders", &time, &price, 1);
+                ImPlot::PopStyleVar(2);
+				ImPlot::PopStyleColor();
+			}
+            ImPlot::PopStyleVar(1); 
         }
         ImPlot::EndPlot();
     }
 }
+
+
+//============================================================================
+void
+AgisXAssetPlot::on_hydra_step() noexcept
+{
+}
+
 
 //============================================================================
 void
@@ -112,7 +179,8 @@ AgisXAssetPlot::add_data(
     std::vector<double> const& vec
 )
 {
-    if (vec.size() == second_epoch_index().size())
+    auto index_size = second_epoch_index().size();
+    if (vec.size() != index_size)
     {
         return;
     }
@@ -145,7 +213,6 @@ AgisXPlotViewPrivate::plot_base_data(std::optional<size_t> index_clip) const noe
     ImPlot::SetupAxes(0, 0, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit);
     ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
     ImPlot::SetupAxisLimits(ImAxis_X1, second_epoch_index()[0], second_epoch_index().back());
-
     for (auto const& [column_name, column_vector] : data())
     {
         // if index clip is passed only plot up to that index. This handles the case 

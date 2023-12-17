@@ -146,9 +146,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\app\BaseComp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="external\include\ImGuiFileDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
