@@ -31,7 +31,6 @@ public:
 	void on_hydra_reset() noexcept override;
 	
 	auto get_max_units() const noexcept{ return max_units; }
-	void set_asset_index(size_t index) noexcept;
 
 	auto begin() const noexcept {
 		return order_buffer.cbegin();
@@ -41,7 +40,6 @@ public:
 	}
 
 private:
-
 	size_t historical_index = 0;
 	double max_units = 0;
 	std::vector<Agis::Order*> order_buffer;

@@ -103,14 +103,15 @@ AgisXAssetPlot::draw_plot() noexcept
             double current_close = close_col[streaming_index];
             ImPlot::PlotScatter("Current Close", &current_time, &current_close, 1);
             ImPlot::PopStyleVar(3);
-            ImPlot::PopStyleColor();
+            ImPlot::PopStyleColor(); 
         }
 
         // plot the order buff 
         if (_plot_orders)
         {
             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 3);
-            auto const& b = *(_asset_view.get_order_buffer().value());
+            auto& b = *(_asset_view.get_order_buffer().value());
+            b.on_hydra_step(); // update buffer
             double max_units = b.get_max_units();
             for (auto const& order : b)
             {

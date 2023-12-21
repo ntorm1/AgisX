@@ -290,7 +290,11 @@ OrderBuffer::OrderBuffer(
     auto l = portfolio.__aquire_read_lock();
     for (auto& order : order_history)
     {
-        if (asset_index != order->get_asset_index()) continue;
+        if (asset_index != order->get_asset_index())
+        {
+            historical_index++;
+            continue;
+        }
         order_buffer.push_back(order);
         historical_index++;
 
@@ -306,11 +310,13 @@ OrderBuffer::OrderBuffer(
 void
 OrderBuffer::on_hydra_step() noexcept
 {
-    auto l = portfolio.__aquire_read_lock();
     for (size_t i = historical_index; i < order_history.size(); i++)
     {
         auto& order = order_history[i];
-        if (asset_index != order->get_asset_index()) continue;
+        if (asset_index != order->get_asset_index()) {
+            historical_index++;
+            continue;
+        }
         order_buffer.push_back(order);
         historical_index++;
 
